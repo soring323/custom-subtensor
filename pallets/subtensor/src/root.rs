@@ -588,12 +588,12 @@ impl<T: Config> Pallet<T> {
         RegistrationsThisBlock::<T>::mutate(root_netuid, |val| *val += 1);
 
         // --- 15. Log and announce the successful registration.
-        log::info!(
-            "RootRegistered(netuid:{:?} uid:{:?} hotkey:{:?})",
-            root_netuid,
-            subnetwork_uid,
-            hotkey
-        );
+        // log::info!(
+        //     "RootRegistered(netuid:{:?} uid:{:?} hotkey:{:?})",
+        //     root_netuid,
+        //     subnetwork_uid,
+        //     hotkey
+        // );
         Self::deposit_event(Event::NeuronRegistered(root_netuid, subnetwork_uid, hotkey));
 
         // --- 16. Finish and return success.

@@ -284,12 +284,12 @@ impl<T: Config> Pallet<T> {
     ) -> dispatch::DispatchResult {
         // We check that the transaction is signed by the caller and retrieve the T::AccountId coldkey information.
         let coldkey = ensure_signed(origin)?;
-        log::info!(
-            "do_add_stake( origin:{:?} hotkey:{:?}, stake_to_be_added:{:?} )",
-            coldkey,
-            hotkey,
-            stake_to_be_added
-        );
+        // log::info!(
+        //     "do_add_stake( origin:{:?} hotkey:{:?}, stake_to_be_added:{:?} )",
+        //     coldkey,
+        //     hotkey,
+        //     stake_to_be_added
+        // );
 
         // Ensure the callers coldkey has enough stake to perform the transaction.
         ensure!(
@@ -349,11 +349,11 @@ impl<T: Config> Pallet<T> {
             stakes_this_interval + 1,
             block,
         );
-        log::info!(
-            "StakeAdded( hotkey:{:?}, stake_to_be_added:{:?} )",
-            hotkey,
-            actual_amount_to_stake
-        );
+        // log::info!(
+        //     "StakeAdded( hotkey:{:?}, stake_to_be_added:{:?} )",
+        //     hotkey,
+        //     actual_amount_to_stake
+        // );
         Self::deposit_event(Event::StakeAdded(hotkey, actual_amount_to_stake));
 
         // Ok and return.
@@ -396,12 +396,12 @@ impl<T: Config> Pallet<T> {
     ) -> dispatch::DispatchResult {
         // We check the transaction is signed by the caller and retrieve the T::AccountId coldkey information.
         let coldkey = ensure_signed(origin)?;
-        log::info!(
-            "do_remove_stake( origin:{:?} hotkey:{:?}, stake_to_be_removed:{:?} )",
-            coldkey,
-            hotkey,
-            stake_to_be_removed
-        );
+        // log::info!(
+        //     "do_remove_stake( origin:{:?} hotkey:{:?}, stake_to_be_removed:{:?} )",
+        //     coldkey,
+        //     hotkey,
+        //     stake_to_be_removed
+        // );
 
         // Ensure that the hotkey account exists this is only possible through registration.
         ensure!(
@@ -455,11 +455,11 @@ impl<T: Config> Pallet<T> {
             unstakes_this_interval + 1,
             block,
         );
-        log::info!(
-            "StakeRemoved( hotkey:{:?}, stake_to_be_removed:{:?} )",
-            hotkey,
-            stake_to_be_removed
-        );
+        // log::info!(
+        //     "StakeRemoved( hotkey:{:?}, stake_to_be_removed:{:?} )",
+        //     hotkey,
+        //     stake_to_be_removed
+        // );
         Self::deposit_event(Event::StakeRemoved(hotkey, stake_to_be_removed));
 
         // Done and ok.

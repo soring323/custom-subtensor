@@ -188,13 +188,13 @@ impl<T: Config> Pallet<T> {
     ) -> dispatch::DispatchResult {
         // --- 1. Check the caller's signature. This is the hotkey of a registered account.
         let hotkey = ensure_signed(origin)?;
-        log::info!(
-            "do_set_weights( origin:{:?} netuid:{:?}, uids:{:?}, values:{:?})",
-            hotkey,
-            netuid,
-            uids,
-            values
-        );
+        // log::info!(
+        //     "do_set_weights( origin:{:?} netuid:{:?}, uids:{:?}, values:{:?})",
+        //     hotkey,
+        //     netuid,
+        //     uids,
+        //     values
+        // );
 
         // --- Check that the netuid is not the root network.
         ensure!(
@@ -289,11 +289,11 @@ impl<T: Config> Pallet<T> {
         Self::set_last_update_for_uid(netuid, neuron_uid, current_block);
 
         // --- 19. Emit the tracking event.
-        log::info!(
-            "WeightsSet( netuid:{:?}, neuron_uid:{:?} )",
-            netuid,
-            neuron_uid
-        );
+        // log::info!(
+        //     "WeightsSet( netuid:{:?}, neuron_uid:{:?} )",
+        //     netuid,
+        //     neuron_uid
+        // );
         Self::deposit_event(Event::WeightsSet(netuid, neuron_uid));
 
         // --- 20. Return ok.
@@ -308,11 +308,11 @@ impl<T: Config> Pallet<T> {
     ///
     pub fn check_version_key(netuid: u16, version_key: u64) -> bool {
         let network_version_key: u64 = WeightsVersionKey::<T>::get(netuid);
-        log::info!(
-            "check_version_key( network_version_key:{:?}, version_key:{:?} )",
-            network_version_key,
-            version_key
-        );
+        // log::info!(
+        //     "check_version_key( network_version_key:{:?}, version_key:{:?} )",
+        //     network_version_key,
+        //     version_key
+        // );
         network_version_key == 0 || version_key >= network_version_key
     }
 
