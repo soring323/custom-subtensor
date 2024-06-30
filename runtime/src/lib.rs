@@ -1560,11 +1560,8 @@ impl_runtime_apis! {
                 vec![]
             }
         }
-        fn epoch(netuid: u16, rao_emission: u64) -> Vec<(Vec<u8>, u64, u64)> {
-            SubtensorModule::epoch(netuid, rao_emission)
-                .into_iter()
-                .map(|(account, value1, value2)| (account.encode(), value1, value2))
-                .collect()
+        fn custom_epoch(netuid: u16) -> (Vec<u64>, Vec<u64>, Vec<u64>) {
+            SubtensorModule::custom_epoch(netuid)
         }
     }
 

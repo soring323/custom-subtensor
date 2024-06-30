@@ -700,113 +700,121 @@ impl<T: Config> Pallet<T> {
             .collect()
     }
 
-    // #[allow(clippy::indexing_slicing)]
-    // pub fn custom_epoch(netuid: u16) -> Vec<(u64, u64, u64)> {
-    //     log::info!("custom_epoch(netuid: {:?})", netuid);
-    //     let rao_emission: u64 = Self::get_emission_value(netuid);
-    //     log::info!("rao_emission: {:?}", rao_emission);
-    //     let n: u16 = Self::get_subnetwork_n(netuid);
-    //     log::info!("n: {:?}", n);
-    //     let current_block: u64 = Self::get_current_block_as_u64();
-    //     log::info!("current_block: {:?}", current_block);
-    //     let activity_cutoff: u64 = Self::get_activity_cutoff(netuid) as u64;
-    //     log::info!("activity_cutoff: {:?}", activity_cutoff);
-    //     let last_update: Vec<u64> = Self::get_last_update(netuid);
-    //     log::info!("last_update: {:?}", last_update);
-    //     let inactive: Vec<bool> = last_update
-    //         .iter()
-    //         .map(|updated| *updated + activity_cutoff < current_block)
-    //         .collect();
-    //     log::info!("inactive: {:?}", inactive);
-    //     let active: Vec<bool> = inactive.iter().map(|&b| !b).collect();
-    //     log::info!("active: {:?}", active);
-    //     let block_at_registration: Vec<u64> = Self::get_block_at_registration(netuid);
-    //     log::info!("block_at_registration: {:?}", block_at_registration);
-    //     let hotkeys: Vec<(u16, T::AccountId)> =
-    //         <Keys<T> as IterableStorageDoubleMap<u16, u16, T::AccountId>>::iter_prefix(netuid)
-    //             .collect();
-    //     log::info!("hotkeys: {:?}", hotkeys);
-    //     let mut stake_64: Vec<I64F64> = vec![I64F64::from_num(0.0); n as usize];
-    //     log::info!("stake_64: {:?}", stake_64);
-    //     for (uid_i, hotkey) in &hotkeys {
-    //         stake_64[*uid_i as usize] = I64F64::from_num(Self::get_total_stake_for_hotkey(hotkey));
-    //     }
-    //     log::info!("stake_64: {:?}", stake_64);
-    //     inplace_normalize_64(&mut stake_64);
-    //     log::info!("stake_64: {:?}", stake_64);
-    //     let stake: Vec<I32F32> = vec_fixed64_to_fixed32(stake_64);
-    //     log::info!("stake: {:?}", stake);
-    //     let validator_permits: Vec<bool> = Self::get_validator_permit(netuid);
-    //     log::info!("validator_permits: {:?}", validator_permits);
-    //     let validator_forbids: Vec<bool> = validator_permits.iter().map(|&b| !b).collect();
-    //     log::info!("validator_forbids: {:?}", validator_forbids);
-    //     let max_allowed_validators: u16 = Self::get_max_allowed_validators(netuid);
-    //     log::info!("max_allowed_validators: {:?}", max_allowed_validators);
-    //     let new_validator_permits: Vec<bool> = is_topk(&stake, max_allowed_validators as usize);
-    //     log::info!("new_validator_permits: {:?}", new_validator_permits);
-    //     let mut active_stake: Vec<I32F32> = stake.clone();
-    //     log::info!("active_stake: {:?}", active_stake);
-    //     inplace_mask_vector(&inactive, &mut active_stake);
-    //     log::info!("active_stake: {:?}", active_stake);
-    //     inplace_mask_vector(&validator_forbids, &mut active_stake);
-    //     log::info!("active_stake: {:?}", active_stake);
-    //     inplace_normalize(&mut active_stake);
-    //     log::info!("active_stake: {:?}", active_stake);
-    //     let mut weights: Vec<Vec<(u16, I32F32)>> = Self::get_weights_sparse(netuid);
-    //     log::info!("weights: {:?}", weights);
-    //     weights = mask_rows_sparse(&validator_forbids, &weights);
-    //     log::info!("weights: {:?}", weights);
-    //     weights = mask_diag_sparse(&weights);
-    //     log::info!("weights: {:?}", weights);
-    //     weights = vec_mask_sparse_matrix(
-    //         &weights,
-    //         &last_update,
-    //         &block_at_registration,
-    //         &|updated, registered| updated <= registered,
-    //     );
-    //     log::info!("weights: {:?}", weights);
-    //     inplace_row_normalize_sparse(&mut weights);
-    //     log::info!("weights: {:?}", weights);
-    //     let preranks: Vec<I32F32> = matmul_sparse(&weights, &active_stake, n);
-    //     log::info!("preranks: {:?}", preranks);
-    //     let kappa: I32F32 = Self::get_float_kappa(netuid);
-    //     log::info!("kappa: {:?}", kappa);
-    //     let consensus: Vec<I32F32> = weighted_median_col_sparse(&active_stake, &weights, n, kappa);
-    //     log::info!("consensus: {:?}", consensus);
-    //     weights = col_clip_sparse(&weights, &consensus);
-    //     log::info!("weights: {:?}", weights);
-    //     let validator_trust: Vec<I32F32> = row_sum_sparse(&weights);
-    //     log::info!("validator_trust: {:?}", validator_trust);
-    //     let mut ranks: Vec<I32F32> = matmul_sparse(&weights, &active_stake, n);
-    //     log::info!("ranks: {:?}", ranks);
-    //     let trust: Vec<I32F32> = vecdiv(&ranks, &preranks);
-    //     log::info!("trust: {:?}", trust);
-    //     inplace_normalize(&mut ranks); 
-    //     log::info!("ranks: {:?}", ranks);
-    //     let incentive: Vec<I32F32> = ranks.clone();
-    //     log::info!("incentive: {:?}", incentive);
-    //     let mut bonds: Vec<Vec<(u16, I32F32)>> = Self::get_bonds_sparse(netuid);
-    //     log::info!("bonds: {:?}", bonds);
-    //     bonds = vec_mask_sparse_matrix(
-    //         &bonds,
-    //         &last_update,
-    //         &block_at_registration,
-    //         &|updated, registered| updated <= registered,
-    //     );
-    //     inplace_col_normalize_sparse(&mut bonds, n);
-    //     let mut bonds_delta: Vec<Vec<(u16, I32F32)>> = row_hadamard_sparse(&weights, &active_stake); 
-    //     inplace_col_normalize_sparse(&mut bonds_delta, n); 
-    //     let bonds_moving_average: I64F64 =
-    //         I64F64::from_num(Self::get_bonds_moving_average(netuid)) / I64F64::from_num(1_000_000);
-    //     let alpha: I32F32 = I32F32::from_num(1) - I32F32::from_num(bonds_moving_average);
-    //     let mut ema_bonds: Vec<Vec<(u16, I32F32)>> = mat_ema_sparse(&bonds_delta, &bonds, alpha);
-    //     inplace_col_normalize_sparse(&mut ema_bonds, n); 
-    //     let mut dividends: Vec<I32F32> = matmul_transpose_sparse(&ema_bonds, &incentive);
-    //     inplace_normalize(&mut dividends);
-    //     log::trace!("D: {:?}", &dividends);
-    //     // Return incentive, dividends, and validator trust
-    //     (incentive, dividends, validator_trust)
-    // }
+    #[allow(clippy::indexing_slicing)]
+    pub fn custom_epoch(netuid: u16) -> (Vec<u64>, Vec<u64>, Vec<u64>) {
+        log::info!("custom_epoch(netuid: {:?})", netuid);
+        let rao_emission: u64 = Self::get_emission_value(netuid);
+        log::info!("rao_emission: {:?}", rao_emission);
+        let n: u16 = Self::get_subnetwork_n(netuid);
+        log::info!("n: {:?}", n);
+        let current_block: u64 = Self::get_current_block_as_u64();
+        log::info!("current_block: {:?}", current_block);
+        let activity_cutoff: u64 = Self::get_activity_cutoff(netuid) as u64;
+        log::info!("activity_cutoff: {:?}", activity_cutoff);
+        let last_update: Vec<u64> = Self::get_last_update(netuid);
+        let inactive: Vec<bool> = last_update
+            .iter()
+            .map(|updated| *updated + activity_cutoff < current_block)
+            .collect();
+        let block_at_registration: Vec<u64> = Self::get_block_at_registration(netuid);
+        let hotkeys: Vec<(u16, T::AccountId)> =
+            <Keys<T> as IterableStorageDoubleMap<u16, u16, T::AccountId>>::iter_prefix(netuid)
+                .collect();
+        let mut stake_64: Vec<I64F64> = vec![I64F64::from_num(0.0); n as usize];
+        for (uid_i, hotkey) in &hotkeys {
+            stake_64[*uid_i as usize] = I64F64::from_num(Self::get_total_stake_for_hotkey(hotkey));
+        }
+        inplace_normalize_64(&mut stake_64);
+        let stake: Vec<I32F32> = vec_fixed64_to_fixed32(stake_64);
+        let validator_permits: Vec<bool> = Self::get_validator_permit(netuid);
+        let validator_forbids: Vec<bool> = validator_permits.iter().map(|&b| !b).collect();
+        let mut active_stake: Vec<I32F32> = stake.clone();
+        inplace_mask_vector(&inactive, &mut active_stake);
+        inplace_mask_vector(&validator_forbids, &mut active_stake);
+        inplace_normalize(&mut active_stake);
+        log::info!("active_stake: {:?}", active_stake);
+        let mut weights: Vec<Vec<(u16, I32F32)>> = Self::get_weights_sparse(netuid);
+        weights = mask_rows_sparse(&validator_forbids, &weights);
+        weights = mask_diag_sparse(&weights);
+        weights = vec_mask_sparse_matrix(
+            &weights,
+            &last_update,
+            &block_at_registration,
+            &|updated, registered| updated <= registered,
+        );
+        inplace_row_normalize_sparse(&mut weights);
+        let kappa: I32F32 = Self::get_float_kappa(netuid);
+        log::info!("kappa: {:?}", kappa);
+        let consensus: Vec<I32F32> = weighted_median_col_sparse(&active_stake, &weights, n, kappa);
+        log::info!("consensus: {:?}", consensus);
+        weights = col_clip_sparse(&weights, &consensus);
+        log::info!("weights: {:?}", weights);
+        let validator_trust: Vec<I32F32> = row_sum_sparse(&weights);
+        log::info!("validator_trust: {:?}", validator_trust);
+        let mut ranks: Vec<I32F32> = matmul_sparse(&weights, &active_stake, n);
+        inplace_normalize(&mut ranks); 
+        let incentive: Vec<I32F32> = ranks.clone();
+        log::info!("incentive: {:?}", incentive);
+        let mut bonds: Vec<Vec<(u16, I32F32)>> = Self::get_bonds_sparse(netuid);    
+        match (|| -> Result<_, &'static str> {
+            log::debug!("Starting epoch calculation");
+            let mut bonds_local = &mut bonds;
+            log::info!("Initial bonds done");
+            *bonds_local = vec_mask_sparse_matrix(
+                &bonds_local,
+                &last_update,
+                &block_at_registration,
+                &|updated, registered| updated <= registered,
+            );
+            log::info!("Masked bonds done");
+            inplace_col_normalize_sparse(&mut bonds_local, n);
+            log::info!("Normalized bonds done");
+            let mut bonds_delta: Vec<Vec<(u16, I32F32)>> = row_hadamard_sparse(&weights, &active_stake); 
+            log::info!("Bonds delta done");
+            inplace_col_normalize_sparse(&mut bonds_delta, n); 
+            log::info!("Normalized bonds delta done");
+            let bonds_moving_average: I64F64 =
+                I64F64::from_num(Self::get_bonds_moving_average(netuid)) / I64F64::from_num(1_000_000);
+            log::debug!("Bonds moving average: {:?}", bonds_moving_average);
+            let alpha: I32F32 = I32F32::from_num(1) - I32F32::from_num(bonds_moving_average);
+            log::debug!("Alpha: {:?}", alpha);
+            let mut ema_bonds: Vec<Vec<(u16, I32F32)>> = mat_ema_sparse(&bonds_delta, &bonds_local, alpha);
+            log::info!("EMA bond done");
+            inplace_col_normalize_sparse(&mut ema_bonds, n); 
+            log::info!("Normalized EMA bonds: {:?}", ema_bonds);
+            let mut dividends: Vec<I32F32> = matmul_transpose_sparse(&ema_bonds, &incentive);
+            inplace_normalize(&mut dividends);
+            log::info!("Normalized dividends: {:?}", &dividends);
+            log::info!("Converting incentive, dividends, and validator_trust to f64");
+            use libm::round;
+            const SCALING_FACTOR: u64 = 1_000_000_000; // 1e9
+            let incentive_u64: Vec<u64> = incentive
+                .iter()
+                .map(|x| round(x.to_num::<f64>() * SCALING_FACTOR as f64) as u64)
+                .collect();
+            
+            let dividends_u64: Vec<u64> = dividends
+                .iter()
+                .map(|x| round(x.to_num::<f64>() * SCALING_FACTOR as f64) as u64)
+                .collect();
+            
+            let validator_trust_u64: Vec<u64> = validator_trust
+                .iter()
+                .map(|x| round(x.to_num::<f64>() * SCALING_FACTOR as f64) as u64)
+                .collect();
+            Ok((incentive_u64, dividends_u64, validator_trust_u64))
+        })() {
+            Ok(result) => {
+                log::info!("Epoch calculation completed successfully");
+                result
+            },
+            Err(e) => {
+                log::error!("Error in epoch calculation: {}", e);
+                (vec![], vec![], vec![])
+            }
+        }
+    }
+    
 
     pub fn get_float_rho(netuid: u16) -> I32F32 {
         I32F32::from_num(Self::get_rho(netuid))

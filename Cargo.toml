@@ -116,5 +116,5 @@ opt-level = 3
 
 [profile.production]
 inherits = "release"
-lto = true
-codegen-units = 1
+lto = "thin"
+codegen-units = 256
