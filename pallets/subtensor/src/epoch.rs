@@ -798,8 +798,7 @@ impl<T: Config> Pallet<T> {
             .collect();
         log::info!("Epoch calculation completed successfully");
         (incentive_u64, dividends_u64, validator_trust_u64)
-    
-
+    }
     pub fn get_float_rho(netuid: u16) -> I32F32 {
         I32F32::from_num(Self::get_rho(netuid))
     }
