@@ -1,0 +1,24 @@
+[package]
+name = "epoch-calculator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+frame-support = { version = "4.0.0-dev", default-features = false }
+frame-system = { version = "4.0.0-dev", default-features = false }
+sp-std = { version = "4.0.0-dev", default-features = false }
+log = { version = "0.4.17", default-features = false }
+fixed = { version = "1.23.1", default-features = false }
+substrate-fixed = { version = "0.5.9" }
+libm = "0.2.7"
+
+[features]
+default = ["std"]
+std = [
+    "frame-support/std",
+    "frame-system/std",
+    "sp-std/std",
+    "log/std",
+    "fixed/std",
+    "substrate-fixed/std",
+]

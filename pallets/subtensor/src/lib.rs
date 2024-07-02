@@ -5,7 +5,7 @@
 // Learn more about FRAME and the core library of Substrate FRAME pallets:
 // <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
-
+use epoch_calculator::{SubtensorMethods, custom_epoch as lib_custom_epoch};
 use frame_system::{self as system, ensure_signed};
 
 use frame_support::{
@@ -1233,6 +1233,9 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn offchain_worker(block_number: T::BlockNumber) {
+            Self::offchain_worker(block_number);
+        }
         // ---- Called on the initialization of this pallet. (the order of on_finalize calls is determined in the runtime)
         //
         // # Args:
@@ -2052,7 +2055,6 @@ pub mod pallet {
             Self::user_remove_network(origin, netuid)
         }
     }
-
     // ---- Subtensor helper functions.
     impl<T: Config> Pallet<T> {
         /// Returns the transaction priority for setting weights.
@@ -2420,5 +2422,62 @@ impl<T, H, P> CollectiveInterface<T, H, P> for () {
 
     fn add_vote(_: &T, _: H, _: P, _: bool) -> Result<bool, DispatchError> {
         Ok(true)
+    }
+}
+
+impl<T: Config> SubtensorMethods for Pallet<T> {
+    type AccountId = T::AccountId;
+
+    fn get_emission_value(netuid: u16) -> u64 {
+        Self::get_emission_value(netuid)
+    }
+
+    fn get_subnetwork_n(netuid: u16) -> u16 {
+        Self::get_subnetwork_n(netuid)
+    }
+
+    fn get_current_block_as_u64() -> u64 {
+        Self::get_current_block_as_u64()
+    }
+
+    fn get_activity_cutoff(netuid: u16) -> u64 {
+        Self::get_activity_cutoff(netuid) as u64
+    }
+
+    fn get_last_update(netuid: u16) -> Vec<u64> {
+        Self::get_last_update(netuid)
+    }
+
+    fn get_block_at_registration(netuid: u16) -> Vec<u64> {
+        Self::get_block_at_registration(netuid)
+    }
+
+    fn get_total_stake_for_hotkey(hotkey: &Self::AccountId) -> u64 {
+        Self::get_total_stake_for_hotkey(hotkey)
+    }
+
+    fn get_validator_permit(netuid: u16) -> Vec<bool> {
+        Self::get_validator_permit(netuid)
+    }
+
+    fn get_weights_sparse(netuid: u16) -> Vec<Vec<(u16, I32F32)>> {
+        Self::get_weights_sparse(netuid)
+    }
+
+    fn get_float_kappa(netuid: u16) -> I32F32 {
+        Self::get_float_kappa(netuid)
+    }
+
+    fn get_bonds_sparse(netuid: u16) -> Vec<Vec<(u16, I32F32)>> {
+        Self::get_bonds_sparse(netuid)
+    }
+
+    fn get_bonds_moving_average(netuid: u16) -> u64 {
+        Self::get_bonds_moving_average(netuid)
+    }
+
+    fn iter_prefix_keys(netuid: u16) -> Vec<(u16, Self::AccountId)> {
+        <Keys<T> as IterableStorageDoubleMap<u16, u16, T::AccountId>>::iter_prefix(netuid)
+            .collect()
     }
 }

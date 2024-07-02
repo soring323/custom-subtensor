@@ -190,7 +190,28 @@ parameter_types! {
 }
 
 // Configure FRAME pallets to include in runtime.
+impl frame_system::offchain::SigningTypes for Runtime {
+    type Public = <Signature as traits::Verify>::Signer;
+    type Signature = Signature;
+}
+impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Runtime
+where
+    Call: From<LocalCall>,
+{
+    type OverarchingCall = Call;
+    type Extrinsic = UncheckedExtrinsic;
+}
 
+impl frame_system::offchain::CreateSignedTransaction<Call> for Runtime {
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+        call: Call,
+        public: <Signature as traits::Verify>::Signer,
+        account: AccountId,
+        nonce: Index,
+    ) -> Option<(Call, <UncheckedExtrinsic as traits::Extrinsic>::SignaturePayload)> {
+        // Implementation details...
+    }
+}
 impl frame_system::Config for Runtime {
     // The basic call filter to use in dispatchable.
     type BaseCallFilter = frame_support::traits::Everything;
@@ -1482,6 +1503,14 @@ impl_runtime_apis! {
     }
 
     impl subtensor_custom_rpc_runtime_api::DelegateInfoRuntimeApi<Block> for Runtime {
+        fn trigger_custom_epoch(netuid: u16) -> Result<(), sp_runtime::DispatchError> {
+            Subtensor::offchain_worker(System::block_number())
+            Ok(())
+        }
+
+        fn get_epoch_results(netuid: u16) -> (Vec<u64>, Vec<u64>, Vec<u64>) {
+            Subtensor::epoch_results(netuid)
+        }
         fn get_delegates() -> Vec<u8> {
             let result = SubtensorModule::get_delegates();
             result.encode()
