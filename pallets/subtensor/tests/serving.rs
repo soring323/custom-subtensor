@@ -50,7 +50,7 @@ fn test_serving_subscribe_ok_dispatch_info_ok() {
         assert_eq!(
             call.get_dispatch_info(),
             DispatchInfo {
-                weight: frame_support::weights::Weight::from_parts(46_000_000, 0),
+                weight: frame_support::weights::Weight::from_parts(246_000_000, 0),
                 class: DispatchClass::Normal,
                 pays_fee: Pays::No
             }
@@ -161,7 +161,6 @@ fn test_serving_set_metadata_update() {
 }
 
 #[test]
-#[cfg(not(tarpaulin))]
 fn test_axon_serving_rate_limit_exceeded() {
     new_test_ext(1).execute_with(|| {
         let hotkey_account_id = U256::from(1);
@@ -295,7 +294,7 @@ fn test_prometheus_serving_subscribe_ok_dispatch_info_ok() {
         assert_eq!(
             call.get_dispatch_info(),
             DispatchInfo {
-                weight: frame_support::weights::Weight::from_parts(45_000_000, 0),
+                weight: frame_support::weights::Weight::from_parts(245_000_000, 0),
                 class: DispatchClass::Normal,
                 pays_fee: Pays::No
             }
@@ -379,7 +378,6 @@ fn test_prometheus_serving_set_metadata_update() {
 }
 
 #[test]
-#[cfg(not(tarpaulin))]
 fn test_prometheus_serving_rate_limit_exceeded() {
     new_test_ext(1).execute_with(|| {
         let hotkey_account_id = U256::from(1);

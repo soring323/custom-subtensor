@@ -106,7 +106,6 @@ impl<T: Config> Pallet<T> {
         Axons::<T>::insert(netuid, hotkey_id.clone(), prev_axon);
 
         // We deposit axon served event.
-        // log::info!("AxonServed( hotkey:{:?} ) ", hotkey_id.clone());
         Self::deposit_event(Event::AxonServed(netuid, hotkey_id));
 
         // Return is successful dispatch.
@@ -204,7 +203,6 @@ impl<T: Config> Pallet<T> {
         Prometheus::<T>::insert(netuid, hotkey_id.clone(), prev_prometheus);
 
         // We deposit prometheus served event.
-        log::info!("PrometheusServed( hotkey:{:?} ) ", hotkey_id.clone());
         Self::deposit_event(Event::PrometheusServed(netuid, hotkey_id));
 
         // Return is successful dispatch.
@@ -222,7 +220,7 @@ impl<T: Config> Pallet<T> {
     ) -> bool {
         let rate_limit: u64 = Self::get_serving_rate_limit(netuid);
         let last_serve = prev_axon_info.block;
-        rate_limit == 0 || last_serve == 0 || current_block - last_serve >= rate_limit
+        rate_limit == 0 || last_serve == 0 || current_block.saturating_sub(last_serve) >= rate_limit
     }
 
     pub fn prometheus_passes_rate_limit(
@@ -232,7 +230,7 @@ impl<T: Config> Pallet<T> {
     ) -> bool {
         let rate_limit: u64 = Self::get_serving_rate_limit(netuid);
         let last_serve = prev_prometheus_info.block;
-        rate_limit == 0 || last_serve == 0 || current_block - last_serve >= rate_limit
+        rate_limit == 0 || last_serve == 0 || current_block.saturating_sub(last_serve) >= rate_limit
     }
 
     pub fn has_axon_info(netuid: u16, hotkey: &T::AccountId) -> bool {

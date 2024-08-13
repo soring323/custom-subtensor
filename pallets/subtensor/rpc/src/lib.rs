@@ -5,17 +5,19 @@ use jsonrpsee::{
     proc_macros::rpc,
     types::{error::ErrorObject, ErrorObjectOwned},
 };
+use sp_blockchain::HeaderBackend;
+use sp_runtime::traits::Block as BlockT;
+use std::sync::Arc;
+
+use sp_api::ProvideRuntimeApi;
+use pallet_subtensor::{SerializableEpochResult, SubtensorBondData};
+
+
 pub use subtensor_custom_rpc_runtime_api::{
     DelegateInfoRuntimeApi, NeuronInfoRuntimeApi, SubnetInfoRuntimeApi,
     SubnetRegistrationRuntimeApi,
+    SubtensorCustomApi,
 };
-use codec::Codec;
-use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
-use sp_api::ProvideRuntimeApi;
-use sp_blockchain::HeaderBackend;
-use sp_runtime::{generic::BlockId, traits::Block as BlockT};
-use std::sync::Arc;
-use subtensor_runtime_api::SubtensorApi as SubtensorRuntimeApi;
 
 #[rpc(client, server)]
 pub trait SubtensorCustomApi<BlockHash> {
@@ -49,11 +51,28 @@ pub trait SubtensorCustomApi<BlockHash> {
     fn get_subnets_info(&self, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
     #[method(name = "subnetInfo_getSubnetHyperparams")]
     fn get_subnet_hyperparams(&self, netuid: u16, at: Option<BlockHash>) -> RpcResult<Vec<u8>>;
-    #[method(name = "subtensor_epoch")]
-    fn custom_epoch(&self, netuid: u16, at: Option<BlockHash>) -> Result<(Vec<u64>, Vec<u64>, Vec<u64>)>;
 
     #[method(name = "subnetInfo_getLockCost")]
     fn get_network_lock_cost(&self, at: Option<BlockHash>) -> RpcResult<u64>;
+
+     //Add the new method here
+    #[method(name = "subtensor_epoch")]
+    fn subtensor_epoch(&self, netuid: u16, incentive: Option<bool>, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<SerializableEpochResult>;
+
+    #[method(name = "subtensor_active_stake")]
+    fn subtensor_active_stake(&self,netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<String>>; 
+
+    #[method(name = "subtensor_consensus")]
+    fn subtensor_consensus(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<String>>; 
+
+    #[method(name = "subtensor_bond_data")]
+    fn subtensor_bond_data(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<SubtensorBondData>;
+
+    #[method(name = "subtensor_weights")]
+    fn subtensor_weights(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<Vec<(u16, String)>>>;
+
+    #[method(name = "subtensor_dividends")]
+    fn subtensor_dividends(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<String>>;
 }
 
 pub struct SubtensorCustom<C, P> {
@@ -102,6 +121,7 @@ where
     C::Api: NeuronInfoRuntimeApi<Block>,
     C::Api: SubnetInfoRuntimeApi<Block>,
     C::Api: SubnetRegistrationRuntimeApi<Block>,
+    C::Api: SubtensorCustomApi<Block>
 {
     fn get_delegates(&self, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<u8>> {
         let api = self.client.runtime_api();
@@ -226,28 +246,67 @@ where
             Error::RuntimeError(format!("Unable to get subnet lock cost: {:?}", e)).into()
         })
     }
-    
-    fn custom_epoch(&self, netuid: u16, at: Option<<Block as BlockT>::Hash>) -> Result<(Vec<u64>, Vec<u64>, Vec<u64>)> {
+
+    // Custom RPC methods
+    fn subtensor_epoch(
+        &self,
+        netuid: u16,
+        incentive: Option<bool>,
+        exclude_uid: Option<u16>,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<SerializableEpochResult> {
         let api = self.client.runtime_api();
-        let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
-
-        // Trigger the off-chain worker
-        let _ = api.trigger_custom_epoch(&at, netuid).map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9876), // Custom error code
-            message: "Failed to trigger off-chain worker".into(),
-            data: Some(format!("{:?}", e).into()),
-        })?;
-
-        // Wait for a short period to allow the off-chain worker to complete
-        std::thread::sleep(std::time::Duration::from_secs(5));
-
-        // Retrieve the results
-        let results = api.get_epoch_results(&at, netuid).map_err(|e| RpcError {
-            code: ErrorCode::ServerError(9877), // Custom error code
-            message: "Failed to retrieve epoch results".into(),
-            data: Some(format!("{:?}", e).into()),
-        })?;
-
-        Ok(results)
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api
+            .subtensor_epoch(at,netuid, incentive, exclude_uid)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet epoch values: {:?}", e)).into()})
     }
+
+    fn subtensor_active_stake(&self,netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<String>> {
+        let api = self.client.runtime_api();
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api
+            .subtensor_active_stake(at,netuid, exclude_uid)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet active stake values: {:?}", e)).into()})
+    }
+
+    fn subtensor_consensus(&self,netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<String>> {
+        let api = self.client.runtime_api();
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api
+            .subtensor_consensus(at,netuid, exclude_uid)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet consensus values: {:?}", e)).into()})
+    }
+
+    fn subtensor_bond_data(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<SubtensorBondData> {
+
+        let api = self.client.runtime_api();
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api
+            .subtensor_bond_data(at,netuid, exclude_uid)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet bond data: {:?}", e)).into()})
+    }
+
+    fn subtensor_weights(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<Vec<(u16, String)>>> {
+        let api = self.client.runtime_api();
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api
+            .subtensor_weights(at,netuid, exclude_uid)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet bond data: {:?}", e)).into()})
+    }
+
+    fn subtensor_dividends(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<String>> {
+        let api = self.client.runtime_api();
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api
+            .subtensor_dividends(at,netuid, exclude_uid)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet dividends: {:?}", e)).into()})
+    }
+
 }
