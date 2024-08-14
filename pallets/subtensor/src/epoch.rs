@@ -558,7 +558,7 @@ impl<T: Config> Pallet<T> {
         // Normalize remaining bonds: sum_i b_ij = 1.
         inplace_col_normalize_sparse(&mut bonds, n);
         // Compute bonds delta column normalized.
-        let bonds_delta: Vec<Vec<(u16, I32F32)>> = row_hadamard_sparse(&weights, &active_stake); // ΔB = W◦S (outdated W masked)
+        let mut bonds_delta: Vec<Vec<(u16, I32F32)>> = row_hadamard_sparse(&weights, &active_stake); // ΔB = W◦S (outdated W masked)
 		inplace_col_normalize_sparse(&mut bonds_delta, n); // sum_i b_ij = 1
 		
         let consensus = Self::subtensor_consensus(netuid, exclude_uid);
