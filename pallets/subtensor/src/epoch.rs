@@ -583,7 +583,7 @@ impl<T: Config> Pallet<T> {
     }
 
 
-    pub fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>) {
+    pub fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool) {
         // Get subnetwork size.
         let n: u16 = Self::get_subnetwork_n(netuid);
         // Last update vector.
@@ -617,9 +617,6 @@ impl<T: Config> Pallet<T> {
         // Get current validator permits.
         let validator_permits: Vec<bool> = Self::get_validator_permit(netuid);
 
-        // Logical negation of validator_permits.
-        let validator_forbids: Vec<bool> = validator_permits.iter().map(|&b| !b).collect();
-
         // ==================
         // == Active Stake ==
         // ==================
@@ -634,7 +631,9 @@ impl<T: Config> Pallet<T> {
 
         let bonds: Vec<Vec<(u16, I32F32)>> = Self::get_bonds_sparse(netuid);
 
-        (n, last_update, block_at_registration, validator_permits, active_stake, weights, kappa, bonds)
+        let liquid_alpha_on: bool = LiquidAlphaOn::<T>::get(netuid);
+
+        (n, last_update, block_at_registration, validator_permits, active_stake, weights, kappa, bonds, liquid_alpha_on)
     }
 
 
