@@ -312,6 +312,8 @@ pub mod pallet {
         }
     }
 
+    
+    
    /// Define subtensor'rpc return Type
     #[derive(Serialize, Deserialize, Encode, Decode, Clone, Debug, TypeInfo)]
     
@@ -323,6 +325,8 @@ pub mod pallet {
         /// EMA Bonds (assuming a new field based on your implementation needs)
         pub ema_bonds: Vec<Vec<(u16, String)>>,
     }
+
+    
 
     impl SubtensorBondData {
         // Function to convert a nested vector of I32F32 to String
@@ -348,6 +352,52 @@ pub mod pallet {
                 bonds: SubtensorBondData::convert_nested_vec(bonds),
                 bonds_delta: SubtensorBondData::convert_nested_vec(bonds_delta),
                 ema_bonds: SubtensorBondData::convert_nested_vec(ema_bonds),
+            }
+        }
+    }
+
+    /// Define subtensor'rpc return Type
+    #[derive(Serialize, Deserialize, Encode, Decode, Clone, Debug, TypeInfo)]
+    pub struct WeightOptimizationParams {
+        /// Number of validators
+        n: u16,
+        /// Last update block
+        last_update: Vec<u64>,
+        /// Block at registration
+        block_at_registration: Vec<u64>,
+        /// Validator permit
+        validator_permit: Vec<bool>,
+        /// Normalized Active stake
+        active_stake: Vec<String>,
+        /// Storage Weights
+        weights: Vec<Vec<(u16, String)>>,
+    }
+
+    impl WeightOptimizationParams {
+        // Function to convert a nested vector of I32F32 to String
+        fn convert_nested_vec(input: Vec<Vec<(u16, I32F32)>>) -> Vec<Vec<(u16, String)>> {
+            input
+                .into_iter()
+                .map(|inner_vec| {
+                    inner_vec
+                        .into_iter()
+                        .map(|(uid, value)| (uid, format!("{:?}", value))) // Convert I32F32 to String
+                        .collect()
+                })
+                .collect()
+        }
+    }
+
+    impl From<(u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>)> for WeightOptimizationParams {
+        fn from(params: (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>)) -> Self {
+            let (n, last_update, block_at_registration, validator_permit, active_stake, weights) = params;
+            WeightOptimizationParams {
+                n,
+                last_update,
+                block_at_registration,
+                validator_permit,
+                active_stake: active_stake.into_iter().map(|value| format!("{:?}", value)).collect(),
+                weights: WeightOptimizationParams::convert_nested_vec(weights),
             }
         }
     }

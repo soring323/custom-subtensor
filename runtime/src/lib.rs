@@ -42,7 +42,7 @@ use sp_std::prelude::*;
 
 extern crate alloc;
 use alloc::string::String;
-use pallet_subtensor::{SerializableEpochResult, SubtensorBondData};
+use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams};
 use alloc::format;
 
 #[cfg(feature = "std")]
@@ -1724,6 +1724,11 @@ impl_runtime_apis! {
             .map(|&stake| format!("{:.6}", stake.to_num::<f64>())) // Convert to f64 for formatting
             .collect();
             subnet_dividends_str
+        }
+
+        fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> WeightOptimizationParams {
+            let result = SubtensorModule::subtensor_weight_optimization(netuid, exclude_uid);
+            WeightOptimizationParams::from(result)
         }
     }
 }

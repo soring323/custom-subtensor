@@ -10,7 +10,7 @@ use sp_runtime::traits::Block as BlockT;
 use std::sync::Arc;
 
 use sp_api::ProvideRuntimeApi;
-use pallet_subtensor::{SerializableEpochResult, SubtensorBondData};
+use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams};
 
 
 pub use subtensor_custom_rpc_runtime_api::{
@@ -73,6 +73,9 @@ pub trait SubtensorCustomApi<BlockHash> {
 
     #[method(name = "subtensor_dividends")]
     fn subtensor_dividends(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<String>>;
+
+    #[method(name = "subtensor_weight_optimization")]
+    fn subtensor_weight_optimization(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<WeightOptimizationParams>;
 }
 
 pub struct SubtensorCustom<C, P> {
@@ -309,4 +312,12 @@ where
             Error::RuntimeError(format!("Unable to get subnet dividends: {:?}", e)).into()})
     }
 
+    fn subtensor_weight_optimization(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<WeightOptimizationParams> {
+        let api = self.client.runtime_api();
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api
+            .subtensor_weight_optimization(at,netuid, exclude_uid)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet weight optimization params: {:?}", e)).into()})
+    }
 }

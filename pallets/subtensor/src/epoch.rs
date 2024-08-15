@@ -583,56 +583,56 @@ impl<T: Config> Pallet<T> {
     }
 
 
-    // /// Optimize weights and bonds to maximize dividends
-    // pub fn optimize_for_dividends(netuid: u16) -> Result<(), DispatchError> {
-    //     // 1. Retrieve current network parameters
-    //     let n: u16 = Self::get_subnetwork_n(netuid);
-    //     let mut weights: Vec<Vec<I32F32>> = Self::get_weights(netuid);
-    //     let mut bonds: Vec<Vec<I32F32>> = Self::get_bonds(netuid);
+    pub fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>) {
+        // Get subnetwork size.
+        let n: u16 = Self::get_subnetwork_n(netuid);
+        // Last update vector.
+        let last_update: Vec<u64> = Self::get_last_update(netuid);
+    
+        // Block at registration vector (block when each neuron was most recently registered).
+        let block_at_registration: Vec<u64> = Self::get_block_at_registration(netuid);
+        log::trace!("Block at registration: {:?}", &block_at_registration);
 
-    //     // 2. Calculate active stake
-    //     let active_stake: Vec<I32F32> = Self::subtensor_active_stake(netuid);
+        // ===========
+        // == Stake ==
+        // ===========
 
-    //     // 3. Calculate weights' impact on bonds_delta
-    //     let mut bonds_delta: Vec<Vec<I32F32>> = row_hadamard(&weights, &active_stake);
-    //     inplace_col_normalize(&mut bonds_delta); // Normalize bonds_delta
+        let hotkeys: Vec<(u16, T::AccountId)> =
+            <Keys<T> as IterableStorageDoubleMap<u16, u16, T::AccountId>>::iter_prefix(netuid)
+                .collect();
+        log::trace!("hotkeys: {:?}", &hotkeys);
 
-    //     // 4. Compute EMA bonds using the optimized weights
-    //     let consensus: Vec<I32F32> = Self::subtensor_consensus(netuid);
-    //     let mut ema_bonds = Self::compute_ema_bonds(netuid, consensus.clone(), bonds_delta.clone(), bonds.clone());
+        // Access network stake as normalized vector.
+        let mut stake_64: Vec<I64F64> = vec![I64F64::from_num(0.0); n as usize];
+        for (uid_i, hotkey) in &hotkeys {
+            stake_64[*uid_i as usize] = I64F64::from_num(Self::get_total_stake_for_hotkey(hotkey));
+        }
+        log::trace!("Stake : {:?}", &stake_64);
+        inplace_normalize_64(&mut stake_64);
+        let stake: Vec<I32F32> = vec_fixed64_to_fixed32(stake_64);
+        // =======================
+        // == Validator permits ==
+        // =======================
 
-    //     // 5. Adjust weights to maximize dividends
-    //     // Increase weights where the neuron has a higher stake
-    //     for i in 0..n as usize {
-    //         for j in 0..n as usize {
-    //             if active_stake[i] > I32F32::from_num(0.0) && bonds[i][j] > I32F32::from_num(0.0) {
-    //                 // Focus on increasing weights that affect bonds positively
-    //                 weights[i][j] = weights[i][j].saturating_add(I32F32::from_num(0.01));
-    //             }
-    //         }
-    //     }
+        // Get current validator permits.
+        let validator_permits: Vec<bool> = Self::get_validator_permit(netuid);
 
-    //     // 6. Normalize weights after adjustment
-    //     inplace_row_normalize(&mut weights);
+        // Logical negation of validator_permits.
+        let validator_forbids: Vec<bool> = validator_permits.iter().map(|&b| !b).collect();
 
-    //     // 7. Recompute EMA bonds with adjusted weights
-    //     bonds_delta = row_hadamard(&weights, &active_stake);
-    //     inplace_col_normalize(&mut bonds_delta); // Normalize bonds_delta again
+        // ==================
+        // == Active Stake ==
+        // ==================
+        
 
-    //     ema_bonds = Self::compute_ema_bonds(netuid, consensus.clone(), bonds_delta.clone(), bonds);
+        let mut active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
-    //     // 8. Calculate the dividends using the optimized EMA bonds
-    //     let dividends: Vec<I32F32> = matmul_transpose(&ema_bonds, &consensus);
+        // Access network weights row unnormalized.
+        let mut weights: Vec<Vec<(u16, I32F32)>> = Self::get_weights_sparse(netuid);
 
-    //     // 9. Store the optimized dividends in the state (for retrieval or further processing)
-    //     inplace_normalize(&dividends); // Normalize the dividends
-    //     Dividends::<T>::insert(netuid, dividends.iter().map(|d| fixed_proportion_to_u16(*d)).collect());
+        (n, last_update, block_at_registration, validator_permits, active_stake, weights)
+    }
 
-    //     // Optionally log the optimized dividends
-    //     log::info!("Optimized Dividends: {:?}", dividends);
-
-    //     Ok(())
-    // }
 
 
     #[allow(clippy::indexing_slicing)]
