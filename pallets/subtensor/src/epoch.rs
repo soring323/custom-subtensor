@@ -583,7 +583,7 @@ impl<T: Config> Pallet<T> {
     }
 
 
-    pub fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>) {
+    pub fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32) {
         // Get subnetwork size.
         let n: u16 = Self::get_subnetwork_n(netuid);
         // Last update vector.
@@ -625,12 +625,14 @@ impl<T: Config> Pallet<T> {
         // ==================
         
 
-        let mut active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
+        let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
         // Access network weights row unnormalized.
-        let mut weights: Vec<Vec<(u16, I32F32)>> = Self::get_weights_sparse(netuid);
+        let weights: Vec<Vec<(u16, I32F32)>> = Self::get_weights_sparse(netuid);
 
-        (n, last_update, block_at_registration, validator_permits, active_stake, weights)
+        let kappa: I32F32 = Self::get_float_kappa(netuid);
+
+        (n, last_update, block_at_registration, validator_permits, active_stake, weights, kappa)
     }
 
 

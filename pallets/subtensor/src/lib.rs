@@ -371,6 +371,7 @@ pub mod pallet {
         active_stake: Vec<String>,
         /// Storage Weights
         weights: Vec<Vec<(u16, String)>>,
+        kappa: String,
     }
 
     impl WeightOptimizationParams {
@@ -388,9 +389,9 @@ pub mod pallet {
         }
     }
 
-    impl From<(u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>)> for WeightOptimizationParams {
-        fn from(params: (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>)) -> Self {
-            let (n, last_update, block_at_registration, validator_permit, active_stake, weights) = params;
+    impl From<(u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32)> for WeightOptimizationParams {
+        fn from(params: (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32)) -> Self {
+            let (n, last_update, block_at_registration, validator_permit, active_stake, weights, kappa) = params;
             WeightOptimizationParams {
                 n,
                 last_update,
@@ -398,6 +399,7 @@ pub mod pallet {
                 validator_permit,
                 active_stake: active_stake.into_iter().map(|value| format!("{:?}", value)).collect(),
                 weights: WeightOptimizationParams::convert_nested_vec(weights),
+                kappa: format!("{:?}", kappa),
             }
         }
     }

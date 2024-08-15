@@ -315,8 +315,7 @@ where
     fn subtensor_weight_optimization(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<WeightOptimizationParams> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api
-            .subtensor_weight_optimization(at,netuid, exclude_uid)
+        api.subtensor_weight_optimization(at,netuid, exclude_uid)
             .map_err(|e| {
             Error::RuntimeError(format!("Unable to get subnet weight optimization params: {:?}", e)).into()})
     }
