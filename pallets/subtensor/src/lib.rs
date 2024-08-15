@@ -374,6 +374,7 @@ pub mod pallet {
         kappa: String,
         bonds: Vec<Vec<(u16, String)>>,
         liquid_alpha_on: bool,
+        alpha_values: (String, String),
     }
 
     impl WeightOptimizationParams {
@@ -391,9 +392,9 @@ pub mod pallet {
         }
     }
 
-    impl From<(u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool)> for WeightOptimizationParams {
-        fn from(params: (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool)) -> Self {
-            let (n, last_update, block_at_registration, validator_permit, active_stake, weights, kappa, bonds, liquid_alpha_on) = params;
+    impl From<(u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool, (I32F32, I32F32))> for WeightOptimizationParams {
+        fn from(params: (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool, (I32F32, I32F32))) -> Self {
+            let (n, last_update, block_at_registration, validator_permit, active_stake, weights, kappa, bonds, liquid_alpha_on, alpha_values) = params;
             WeightOptimizationParams {
                 n,
                 last_update,
@@ -404,6 +405,7 @@ pub mod pallet {
                 kappa: format!("{:?}", kappa),
                 bonds: WeightOptimizationParams::convert_nested_vec(bonds),
                 liquid_alpha_on,
+                alpha_values: (format!("{:?}", alpha_values.0), format!("{:?}", alpha_values.1)),
             }
         }
     }
