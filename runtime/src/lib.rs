@@ -42,7 +42,7 @@ use sp_std::prelude::*;
 
 extern crate alloc;
 use alloc::string::String;
-use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams};
+use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams, SubtensorWeightData};
 use alloc::format;
 
 #[cfg(feature = "std")]
@@ -1702,18 +1702,9 @@ impl_runtime_apis! {
             SubtensorBondData::from(result)
         }
 
-        fn subtensor_weights(netuid: u16, exclude_uid: Option<u16>) -> Vec<Vec<(u16, String)>> {
+        fn subtensor_weights(netuid: u16, exclude_uid: Option<u16>) -> SubtensorWeightData {
             let result = SubtensorModule::get_normalized_weights(netuid, exclude_uid);
-            let weights = result
-            .into_iter()
-            .map(|inner_vec| {
-                inner_vec
-                    .into_iter()
-                    .map(|(uid, value)| (uid, format!("{:?}", value))) // Convert I32F32 to String
-                    .collect()
-            })
-            .collect();
-            weights
+            SubtensorWeightData::from(result)
         }
 
         fn subtensor_dividends(netuid: u16, exclude_uid: Option<u16>) -> Vec<String> {

@@ -377,20 +377,6 @@ pub mod pallet {
         alpha_values: (String, String),
     }
 
-    impl WeightOptimizationParams {
-        // Function to convert a nested vector of I32F32 to String
-        fn convert_nested_vec(input: Vec<Vec<(u16, I32F32)>>) -> Vec<Vec<(u16, String)>> {
-            input
-                .into_iter()
-                .map(|inner_vec| {
-                    inner_vec
-                        .into_iter()
-                        .map(|(uid, value)| (uid, format!("{:?}", value))) // Convert I32F32 to String
-                        .collect()
-                })
-                .collect()
-        }
-    }
 
     impl From<(u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool, (I32F32, I32F32))> for WeightOptimizationParams {
         fn from(params: (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool, (I32F32, I32F32))) -> Self {
@@ -401,14 +387,34 @@ pub mod pallet {
                 block_at_registration,
                 validator_permit,
                 active_stake: active_stake.into_iter().map(|value| format!("{:?}", value)).collect(),
-                weights: WeightOptimizationParams::convert_nested_vec(weights),
+                weights: SubtensorBondData::convert_nested_vec(weights),
                 kappa: format!("{:?}", kappa),
-                bonds: WeightOptimizationParams::convert_nested_vec(bonds),
+                bonds: SubtensorBondData::convert_nested_vec(bonds),
                 liquid_alpha_on,
                 alpha_values: (format!("{:?}", alpha_values.0), format!("{:?}", alpha_values.1)),
             }
         }
     }
+
+    /// Define subtensor'rpc return Type
+    #[derive(Serialize, Deserialize, Encode, Decode, Clone, Debug, TypeInfo)]
+    pub struct SubtensorWeightData {
+        /// Weights before consensus clipping
+        pre_clip_weights: Vec<Vec<(u16, String)>>,
+        /// Normalized weights
+        normalized_weights: Vec<Vec<(u16, String)>>,
+    }
+
+    impl From<(Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)> for SubtensorWeightData {
+        fn from(weights: (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)) -> Self {
+            let (pre_clip_weights, normalized_weights ) = weights;
+            SubtensorWeightData {
+                pre_clip_weights: SubtensorBondData::convert_nested_vec(pre_clip_weights),
+                normalized_weights: SubtensorBondData::convert_nested_vec(normalized_weights),
+            }
+        }
+    }
+
 
     /// Senate requirements
     #[pallet::type_value]

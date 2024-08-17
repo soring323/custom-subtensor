@@ -489,15 +489,14 @@ impl<T: Config> Pallet<T> {
     
     
     
-    pub fn get_normalized_weights(netuid: u16, exclude_uid: Option<u16>) -> Vec<Vec<(u16, I32F32)>> {
+    pub fn get_normalized_weights(netuid: u16, exclude_uid: Option<u16>) ->(Vec<Vec<(u16, I32F32)>>,  Vec<Vec<(u16, I32F32)>>){
         let weights = Self::get_pre_clip_sparse_weights(netuid);
         let n: u16 = Self::get_subnetwork_n(netuid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
         // Clip weights at majority consensus
         let kappa: I32F32 = Self::get_float_kappa(netuid); // consensus majority ratio, e.g. 51%.
         let consensus: Vec<I32F32> = weighted_median_col_sparse(&active_stake, &weights, n, kappa);
-
-        col_clip_sparse(&weights, &consensus)
+        (weights.clone(), col_clip_sparse(&weights, &consensus))
     }
 
     /// Calculates reward consensus values, then updates rank, trust, consensus, incentive, dividend, pruning_score, emission and bonds, and returns the emissions for uids/hotkeys in a given `netuid`.
@@ -507,7 +506,7 @@ impl<T: Config> Pallet<T> {
     /// * 'debug' ( bool ):
     fn subtensor_incentive(netuid: u16, exclude_uid: Option<u16>) -> Vec<I32F32> {
         let n: u16 = Self::get_subnetwork_n(netuid);
-        let weights = Self::get_normalized_weights(netuid, exclude_uid);
+        let (_, weights,  )= Self::get_normalized_weights(netuid, exclude_uid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
         let mut ranks: Vec<I32F32> = matmul_sparse(&weights, &active_stake, n);
@@ -541,7 +540,7 @@ impl<T: Config> Pallet<T> {
     pub fn subtensor_bond_data(netuid: u16, exclude_uid: Option<u16>) -> (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>) {
 
         let n: u16 = Self::get_subnetwork_n(netuid);
-        let weights = Self::get_normalized_weights(netuid, exclude_uid);
+        let( _, weights )= Self::get_normalized_weights(netuid, exclude_uid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
         let mut bonds: Vec<Vec<(u16, I32F32)>> = Self::get_bonds_sparse(netuid);

@@ -2,7 +2,7 @@
 extern crate alloc;
 use alloc::vec::Vec;
 use alloc::string::String;
-use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams};
+use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams, SubtensorWeightData};
 
 
 // Here we declare the runtime API. It is implemented it the `impl` block in
@@ -41,7 +41,7 @@ sp_api::decl_runtime_apis! {
         fn subtensor_active_stake(netuid: u16, exclude_uid: Option<u16>) -> Vec<String>;
         fn subtensor_consensus(netuid: u16, exclude_uid: Option<u16>) -> Vec<String>;
         fn subtensor_bond_data(netuid: u16, exclude_uid: Option<u16>) -> SubtensorBondData;
-        fn subtensor_weights(netuid: u16, exclude_uid: Option<u16>) -> Vec<Vec<(u16, String)>>;
+        fn subtensor_weights(netuid: u16, exclude_uid: Option<u16>) -> SubtensorWeightData;
         fn subtensor_dividends(netuid: u16, exclude_uid: Option<u16>) -> Vec<String>;
         fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> WeightOptimizationParams;
     }

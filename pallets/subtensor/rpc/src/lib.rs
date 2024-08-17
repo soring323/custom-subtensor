@@ -10,7 +10,7 @@ use sp_runtime::traits::Block as BlockT;
 use std::sync::Arc;
 
 use sp_api::ProvideRuntimeApi;
-use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams};
+use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams, SubtensorWeightData};
 
 
 pub use subtensor_custom_rpc_runtime_api::{
@@ -69,7 +69,7 @@ pub trait SubtensorCustomApi<BlockHash> {
     fn subtensor_bond_data(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<SubtensorBondData>;
 
     #[method(name = "subtensor_weights")]
-    fn subtensor_weights(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<Vec<(u16, String)>>>;
+    fn subtensor_weights(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<SubtensorWeightData>;
 
     #[method(name = "subtensor_dividends")]
     fn subtensor_dividends(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<String>>;
@@ -294,7 +294,7 @@ where
             Error::RuntimeError(format!("Unable to get subnet bond data: {:?}", e)).into()})
     }
 
-    fn subtensor_weights(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<Vec<(u16, String)>>> {
+    fn subtensor_weights(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<SubtensorWeightData> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
         api
