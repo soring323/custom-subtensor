@@ -1703,7 +1703,7 @@ impl_runtime_apis! {
         }
 
         fn subtensor_weights(netuid: u16, exclude_uid: Option<u16>) -> Vec<Vec<(u16, String)>> {
-            let result = SubtensorModule::get_normolized_weights(netuid, exclude_uid);
+            let result = SubtensorModule::get_normalized_weights(netuid, exclude_uid);
             let weights = result
             .into_iter()
             .map(|inner_vec| {

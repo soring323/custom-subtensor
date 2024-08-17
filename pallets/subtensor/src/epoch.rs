@@ -489,7 +489,7 @@ impl<T: Config> Pallet<T> {
     
     
     
-    pub fn get_normolized_weights(netuid: u16, exclude_uid: Option<u16>) -> Vec<Vec<(u16, I32F32)>> {
+    pub fn get_normalized_weights(netuid: u16, exclude_uid: Option<u16>) -> Vec<Vec<(u16, I32F32)>> {
         let weights = Self::get_pre_clip_sparse_weights(netuid);
         let n: u16 = Self::get_subnetwork_n(netuid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
@@ -507,7 +507,7 @@ impl<T: Config> Pallet<T> {
     /// * 'debug' ( bool ):
     fn subtensor_incentive(netuid: u16, exclude_uid: Option<u16>) -> Vec<I32F32> {
         let n: u16 = Self::get_subnetwork_n(netuid);
-        let weights = Self::get_normolized_weights(netuid, exclude_uid);
+        let weights = Self::get_normalized_weights(netuid, exclude_uid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
         let mut ranks: Vec<I32F32> = matmul_sparse(&weights, &active_stake, n);
@@ -541,7 +541,7 @@ impl<T: Config> Pallet<T> {
     pub fn subtensor_bond_data(netuid: u16, exclude_uid: Option<u16>) -> (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>) {
 
         let n: u16 = Self::get_subnetwork_n(netuid);
-        let weights = Self::get_normolized_weights(netuid, exclude_uid);
+        let weights = Self::get_normalized_weights(netuid, exclude_uid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
         let mut bonds: Vec<Vec<(u16, I32F32)>> = Self::get_bonds_sparse(netuid);
