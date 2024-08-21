@@ -537,7 +537,7 @@ impl<T: Config> Pallet<T> {
     /// (Sparse version used for production.)
     /// # Args:
     /// * 'netuid': ( u16 ):
-    pub fn subtensor_bond_data(netuid: u16, exclude_uid: Option<u16>) -> (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>) {
+    pub fn subtensor_bond_data(netuid: u16, exclude_uid: Option<u16>) -> (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>) {
 
         let n: u16 = Self::get_subnetwork_n(netuid);
         let( _, weights )= Self::get_normalized_weights(netuid, exclude_uid);
@@ -558,7 +558,8 @@ impl<T: Config> Pallet<T> {
         inplace_col_normalize_sparse(&mut bonds, n);
         // Compute bonds delta column normalized.
         let mut bonds_delta: Vec<Vec<(u16, I32F32)>> = row_hadamard_sparse(&weights, &active_stake); // ΔB = W◦S (outdated W masked)
-		inplace_col_normalize_sparse(&mut bonds_delta, n); // sum_i b_ij = 1
+		let non_normalized_bonds_delta = bonds_delta.clone();
+        inplace_col_normalize_sparse(&mut bonds_delta, n); // sum_i b_ij = 1
 		
         let consensus = Self::subtensor_consensus(netuid, exclude_uid);
 
@@ -566,7 +567,7 @@ impl<T: Config> Pallet<T> {
         let mut ema_bonds = Self::compute_ema_bonds_sparse(netuid, consensus.clone(), bonds_delta.clone(), bonds.clone());
         // Normalize EMA bonds.
         inplace_col_normalize_sparse(&mut ema_bonds, n); // sum_i b_ij = 1
-        (bonds, bonds_delta, ema_bonds)
+        (bonds, bonds_delta, ema_bonds, non_normalized_bonds_delta)
     }
 
     /// Calculates dividends and return this values for uids/hotkeys in a given `netuid`.
@@ -575,7 +576,7 @@ impl<T: Config> Pallet<T> {
     /// * 'netuid': ( u16 ):
     pub fn subtensor_dividends(netuid: u16, exclude_uid: Option<u16>) -> Vec<I32F32> {
         let incentive = Self::subtensor_incentive(netuid, exclude_uid);
-        let (_,_, ema_bonds) = Self::subtensor_bond_data(netuid, exclude_uid); 
+        let (_,_, ema_bonds,_) = Self::subtensor_bond_data(netuid, exclude_uid); 
         let mut dividends: Vec<I32F32> = matmul_transpose_sparse(&ema_bonds, &incentive);
         inplace_normalize(&mut dividends);
         return dividends;

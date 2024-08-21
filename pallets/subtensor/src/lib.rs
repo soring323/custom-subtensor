@@ -323,7 +323,10 @@ pub mod pallet {
         /// Bonds delta
         bonds_delta: Vec<Vec<(u16, String)>>,
         /// EMA Bonds (assuming a new field based on your implementation needs)
-        pub ema_bonds: Vec<Vec<(u16, String)>>,
+        ema_bonds: Vec<Vec<(u16, String)>>,
+
+        /// Bonds delta (non-normalized)
+        bonds_delta_non_normalized: Vec<Vec<(u16, String)>>,
     }
 
     
@@ -344,14 +347,15 @@ pub mod pallet {
     }
 
     // Implement conversion
-    impl From<(Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)> for SubtensorBondData {
-        fn from(bondata: (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)) -> Self {
-            let (bonds, bonds_delta, ema_bonds) = bondata;
+    impl From<(Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)> for SubtensorBondData {
+        fn from(bondata: (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)) -> Self {
+            let (bonds, bonds_delta, ema_bonds, bonds_delta_non_normalized) = bondata;
 
             SubtensorBondData {
                 bonds: SubtensorBondData::convert_nested_vec(bonds),
                 bonds_delta: SubtensorBondData::convert_nested_vec(bonds_delta),
                 ema_bonds: SubtensorBondData::convert_nested_vec(ema_bonds),
+                bonds_delta_non_normalized: SubtensorBondData::convert_nested_vec(bonds_delta_non_normalized),
             }
         }
     }
