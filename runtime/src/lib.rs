@@ -1721,6 +1721,18 @@ impl_runtime_apis! {
             let result = SubtensorModule::subtensor_weight_optimization(netuid, exclude_uid);
             WeightOptimizationParams::from(result)
         }
+
+        fn subtensor_simulate_emission_drain(netuid: u16) -> Vec<(String, u64)> {
+            let result = SubtensorModule::simulate_emission_drain(netuid);
+            // Convert the result to Vec<(String, u64)>
+            // Convert the result to Vec<(String, u64)>
+            let result = result.unwrap_or_default();
+            result.into_iter()
+                .map(|(hotkey, emission)| {
+                    (format!("{:?}", hotkey), emission)
+                })
+                .collect()
+        }
     }
 }
 

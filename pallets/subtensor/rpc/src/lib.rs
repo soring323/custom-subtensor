@@ -76,6 +76,9 @@ pub trait SubtensorCustomApi<BlockHash> {
 
     #[method(name = "subtensor_weight_optimization")]
     fn subtensor_weight_optimization(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<WeightOptimizationParams>;
+
+    #[method(name = "subtensor_simulate_emission_drain")]
+    fn subtensor_simulate_emission_drain(&self, netuid: u16, at: Option<BlockHash>) -> RpcResult<Vec<(String, u64)>>;
 }
 
 pub struct SubtensorCustom<C, P> {
@@ -318,5 +321,13 @@ where
         api.subtensor_weight_optimization(at,netuid, exclude_uid)
             .map_err(|e| {
             Error::RuntimeError(format!("Unable to get subnet weight optimization params: {:?}", e)).into()})
+    }
+
+    fn subtensor_simulate_emission_drain(&self, netuid: u16, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<(String, u64)>> {
+        let api = self.client.runtime_api();
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.subtensor_simulate_emission_drain(at,netuid)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet simulate emission drain: {:?}", e)).into()})
     }
 }

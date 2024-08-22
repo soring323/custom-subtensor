@@ -110,6 +110,48 @@ impl<T: Config> Pallet<T> {
         }
     }
 
+/// Simulates the emission draining process for a specific subnet without updating storage.
+/// Returns a list of coldkeys and their corresponding emission amounts.
+///
+/// This function is intended to be called via an RPC request.
+///
+/// # Arguments
+///
+/// * `netuid` - The network ID to simulate emission draining for.
+///
+/// # Returns
+///
+/// * `Option<Vec<(T::AccountId, u64)>>` - A list of (coldkey, amount) pairs, or None if the subnet is not in tempo.
+pub fn simulate_emission_drain(netuid: u16) -> Option<Vec<(T::AccountId, u64)>> {
+    // Check if the subnet exists and is in tempo
+    if !<Tempo<T>>::contains_key(netuid) {
+        log::info!("netuid doesn't exist in tempo");
+        return None;
+    }
+
+    let Some(tuples_to_drain) = Self::get_loaded_emission_tuples(netuid) else {
+        // There are no tuples to emit for this subnet.
+        log::info!("no emission_tuple");
+        return Some(Vec::new());
+    };
+
+    log::info!("simulate_emission_drain: {:?}", tuples_to_drain);
+
+    let mut result: Vec<(T::AccountId, u64)> = Vec::new();
+
+    for (hotkey, server_amount, validator_amount) in tuples_to_drain.iter() {
+        let total_amount = (*server_amount).saturating_add(*validator_amount);
+        let coldkey = Self::get_coldkey_for_hotkey(hotkey);
+         // Check if we've already recorded an amount for this coldkey
+        if let Some(existing_entry) = result.iter_mut().find(|key| key.0 == coldkey) {
+            existing_entry.1 = existing_entry.1.saturating_add(total_amount);
+        } else {
+            result.push((coldkey, total_amount));
+        }
+    }
+    Some(result)
+}
+
     /// Iterates through networks queues more emission onto their pending storage.
     /// If a network has no blocks left until tempo, we run the epoch function and generate
     /// more token emission tuples for later draining onto accounts.

@@ -44,5 +44,6 @@ sp_api::decl_runtime_apis! {
         fn subtensor_weights(netuid: u16, exclude_uid: Option<u16>) -> SubtensorWeightData;
         fn subtensor_dividends(netuid: u16, exclude_uid: Option<u16>) -> Vec<String>;
         fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> WeightOptimizationParams;
+        fn subtensor_simulate_emission_drain(netuid: u16) -> Vec<(String, u64)>;
     }
 }
