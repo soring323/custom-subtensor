@@ -58,6 +58,8 @@ pub mod subnet_info;
 extern crate alloc;
 pub mod migration;
 
+use sp_runtime::offchain::{storage::StorageValueRef};
+
 #[deny(missing_docs)]
 #[import_section(errors::errors)]
 #[import_section(events::events)]
@@ -268,7 +270,7 @@ pub mod pallet {
         #[pallet::constant]
         type InitialBaseDifficulty: Get<u64>;
     }
-
+    
     /// Alias for the account ID.
     pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -1582,6 +1584,22 @@ pub mod pallet {
                 .saturating_add(migration::migrate_fix_total_coldkey_stake::<T>());
 
             weight
+        }
+        
+        fn offchain_worker(block_number: BlockNumberFor<T>) {
+            log::info!("Running offchain worker for block: {:?}", block_number);
+            use frame_support::storage::IterableStorageMap;
+            use sp_runtime::offchain::{storage::StorageValueRef};
+            for (netuid, _) in <Tempo<T> as IterableStorageMap<u16, u16>>::iter() {
+                let emission_values = Self::simulate_emission_drain(netuid);
+                
+                // Store emission values in offchain storage
+                let storage_key = format!("pallet::emission_values::{}", netuid).into_bytes();
+                let storage_ref = StorageValueRef::persistent(&storage_key);
+                storage_ref.set(&emission_values);
+    
+                log::info!("Stored emission values for netuid {}: {:?}", netuid, emission_values);
+            }
         }
     }
 

@@ -5,8 +5,10 @@ use sp_runtime::Saturating;
 use substrate_fixed::types::I110F18;
 use substrate_fixed::types::I64F64;
 use substrate_fixed::types::I96F32;
+use alloc::format;
 
 impl<T: Config> Pallet<T> {
+
     /// Executes the necessary operations for each block.
     pub fn block_step() -> Result<(), &'static str> {
         let block_number: u64 = Self::get_current_block_as_u64();
@@ -110,47 +112,111 @@ impl<T: Config> Pallet<T> {
         }
     }
 
-/// Simulates the emission draining process for a specific subnet without updating storage.
-/// Returns a list of coldkeys and their corresponding emission amounts.
-///
-/// This function is intended to be called via an RPC request.
-///
-/// # Arguments
-///
-/// * `netuid` - The network ID to simulate emission draining for.
-///
-/// # Returns
-///
-/// * `Option<Vec<(T::AccountId, u64)>>` - A list of (coldkey, amount) pairs, or None if the subnet is not in tempo.
-pub fn simulate_emission_drain(netuid: u16) -> Option<Vec<(T::AccountId, u64)>> {
-    // Check if the subnet exists and is in tempo
-    if !<Tempo<T>>::contains_key(netuid) {
-        log::info!("netuid doesn't exist in tempo");
-        return None;
+    /// Simulates the emission draining process for a specific subnet without updating storage.
+    /// Returns a list of coldkeys and their corresponding emission amounts.
+    ///
+    /// This function is intended to be called via an RPC request.
+    ///
+    /// # Arguments
+    ///
+    /// * `netuid` - The network ID to simulate emission draining for.
+    ///
+    /// # Returns
+    ///
+    /// * `Option<Vec<(T::AccountId, u64)>>` - A list of (coldkey, amount) pairs, or None if the subnet is not in tempo.
+    pub fn simulate_emission_drain(netuid: u16) -> Option<Vec<(T::AccountId, u64)>> {
+        log::info!("check epoch time: {:?}", Self::blocks_until_next_epoch(netuid, Self::get_tempo(netuid), Self::get_current_block_as_u64()));
+        // Check if it's epoch time for this subnet
+        if Self::blocks_until_next_epoch(netuid, Self::get_tempo(netuid), Self::get_current_block_as_u64()) == 0 {
+            // It's epoch time, so we need to calculate the emission for this subnet
+            let rao_emission = Self::get_subnet_emission_value(netuid);
+            
+            // Check if registration is allowed for this subnet
+            if !Self::is_registration_allowed(netuid) {
+                return Some(Vec::new()); // No emission if registration is off
+            }
+
+            // Calculate the actual emission after subnet owner cut
+            let subnet_has_owner = SubnetOwner::<T>::contains_key(netuid);
+            let mut remaining = I96F32::from_num(rao_emission);
+            if subnet_has_owner {
+                let cut = remaining
+                    .saturating_mul(I96F32::from_num(Self::get_subnet_owner_cut()))
+                    .saturating_div(I96F32::from_num(u16::MAX));
+                remaining = remaining.saturating_sub(cut);
+            }
+
+            // Convert back to u64
+            let actual_emission = u64::try_from(remaining.to_num::<u64>()).unwrap_or(0);
+
+            // Calculate the emission tuples
+            let emission_tuples = Self::epoch_dense(netuid, actual_emission);
+
+            // Convert emission tuples to the format expected by simulate_emission_drain
+            return Some(emission_tuples.into_iter().map(|(hotkey, server_amount, validator_amount)| {
+                let total_amount = server_amount.saturating_add(validator_amount);
+                (Self::get_coldkey_for_hotkey(&hotkey), total_amount)
+            }).collect());
+        }
+
+        let Some(tuples_to_drain) = Self::get_loaded_emission_tuples(netuid) else {
+            // There are no tuples to emit for this subnet.
+            log::info!("no emission_tuple");
+            return Some(Vec::new());
+        };
+
+        log::info!("simulate_emission_drain: {:?}", tuples_to_drain);
+
+
+        // If it's not epoch time, we proceed with the existing logic to drain the loaded emission
+
+        let mut result: Vec<(T::AccountId, u64)> = Vec::new();
+
+        for (hotkey, server_amount, validator_amount) in tuples_to_drain.iter() {
+            let total_amount = (*server_amount).saturating_add(*validator_amount);
+            let coldkey = Self::get_coldkey_for_hotkey(hotkey);
+            // Check if we've already recorded an amount for this coldkey
+            if let Some(existing_entry) = result.iter_mut().find(|key| key.0 == coldkey) {
+                existing_entry.1 = existing_entry.1.saturating_add(total_amount);
+            } else {
+                result.push((coldkey, total_amount));
+            }
+        }
+        Some(result)
     }
 
-    let Some(tuples_to_drain) = Self::get_loaded_emission_tuples(netuid) else {
-        // There are no tuples to emit for this subnet.
-        log::info!("no emission_tuple");
-        return Some(Vec::new());
-    };
 
-    log::info!("simulate_emission_drain: {:?}", tuples_to_drain);
+    pub fn fetch_emission_values(netuid: u16) -> Option<Vec<(T::AccountId, u64)>> {
+        let storage_key = format!("pallet::emission_values::{}", netuid).into_bytes();
+        let storage_ref = StorageValueRef::persistent(&storage_key);
+        //let data = storage_ref.get::<Vec<(T::AccountId, u64)>>().ok().flatten()
+        storage_ref.get::<Vec<(T::AccountId, u64)>>().ok().flatten()
+    }
+    
+    /// Simulates the emission drain for all subnets.
+    /// This function iterates through all subnets and calculates the emission for each,
+    /// returning a vector of tuples containing the subnet ID, coldkey, and emission amount.
+    pub fn simulate_emission_drain_all() -> Option<Vec<(T::AccountId,u16,u64)>> {
+        let mut all_emissions = Vec::new();
+        for (netuid, _) in <Tempo<T> as IterableStorageMap<u16, u16>>::iter() {
+            // Skip the root network
+            if netuid == Self::get_root_netuid() {
+                continue;
+            }
 
-    let mut result: Vec<(T::AccountId, u64)> = Vec::new();
+            if let Some(subnet_emissions) = Self::simulate_emission_drain(netuid) {
+                for (coldkey, amount) in subnet_emissions {
+                    all_emissions.push((coldkey,netuid, amount));
+                }
+            }
+        }
 
-    for (hotkey, server_amount, validator_amount) in tuples_to_drain.iter() {
-        let total_amount = (*server_amount).saturating_add(*validator_amount);
-        let coldkey = Self::get_coldkey_for_hotkey(hotkey);
-         // Check if we've already recorded an amount for this coldkey
-        if let Some(existing_entry) = result.iter_mut().find(|key| key.0 == coldkey) {
-            existing_entry.1 = existing_entry.1.saturating_add(total_amount);
+        if all_emissions.is_empty() {
+            None
         } else {
-            result.push((coldkey, total_amount));
+            Some(all_emissions)
         }
     }
-    Some(result)
-}
 
     /// Iterates through networks queues more emission onto their pending storage.
     /// If a network has no blocks left until tempo, we run the epoch function and generate

@@ -79,6 +79,9 @@ pub trait SubtensorCustomApi<BlockHash> {
 
     #[method(name = "subtensor_simulate_emission_drain")]
     fn subtensor_simulate_emission_drain(&self, netuid: u16, at: Option<BlockHash>) -> RpcResult<Vec<(String, u64)>>;
+
+    #[method(name = "subtensor_simulate_emission_drain_all")]
+    fn subtensor_simulate_emission_drain_all(&self, at: Option<BlockHash>) -> RpcResult<Vec<(String,u16,u64)>>;
 }
 
 pub struct SubtensorCustom<C, P> {
@@ -330,4 +333,15 @@ where
             .map_err(|e| {
             Error::RuntimeError(format!("Unable to get subnet simulate emission drain: {:?}", e)).into()})
     }
+
+    fn subtensor_simulate_emission_drain_all(&self, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<(String,u16,u64)>> {
+        let api = self.client.runtime_api();
+        let at = at.unwrap_or_else(|| self.client.info().best_hash);
+        api.subtensor_simulate_emission_drain_all(at)
+            .map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet simulate emission drain all: {:?}", e)).into()})
+    }
+
+
+  
 }

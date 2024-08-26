@@ -1399,7 +1399,7 @@ impl_runtime_apis! {
 
     impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
         fn offchain_worker(header: &<Block as BlockT>::Header) {
-            Executive::offchain_worker(header)
+            Executive::offchain_worker(header);
         }
     }
 
@@ -1725,7 +1725,6 @@ impl_runtime_apis! {
         fn subtensor_simulate_emission_drain(netuid: u16) -> Vec<(String, u64)> {
             let result = SubtensorModule::simulate_emission_drain(netuid);
             // Convert the result to Vec<(String, u64)>
-            // Convert the result to Vec<(String, u64)>
             let result = result.unwrap_or_default();
             result.into_iter()
                 .map(|(hotkey, emission)| {
@@ -1733,6 +1732,28 @@ impl_runtime_apis! {
                 })
                 .collect()
         }
+
+        fn subtensor_simulate_emission_drain_all() -> Vec<(String, u16, u64)> {
+            let result = SubtensorModule::simulate_emission_drain_all();
+            // Convert the result to Vec<(String, u64)>
+            let result = result.unwrap_or_default();
+            result.into_iter()
+                .map(|(hotkey,netuid, emission)| {
+                    (format!("{:?}", hotkey),netuid, emission)
+                })
+                .collect()
+        }
+
+        fn subtensor_epoch_emission_values(netuid: u16) -> Vec<(String, u64)> {
+            let result = SubtensorModule::fetch_emission_values(netuid);
+            let result = result.unwrap_or_default();
+            result.into_iter()
+                .map(|(hotkey, emission)| {
+                    (format!("{:?}", hotkey), emission)
+                })
+                .collect()
+        }
+
     }
 }
 
