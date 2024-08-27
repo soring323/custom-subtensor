@@ -49,7 +49,6 @@ impl<T: Config> Pallet<T> {
             Error::<T>::ColdkeyIsInArbitration
         );
 
-
         // --- 2. Ensure we are delegating an known key.
         // --- 3. Ensure that the coldkey is the owner.
         Self::do_take_checks(&coldkey, &hotkey)?;

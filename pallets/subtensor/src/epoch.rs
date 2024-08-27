@@ -334,7 +334,7 @@ impl<T: Config> Pallet<T> {
             .collect()
     }
 
-        /// Calculates reward consensus values, then updates rank, trust, consensus, incentive, dividend, pruning_score, emission and bonds, and
+    /// Calculates reward consensus values, then updates rank, trust, consensus, incentive, dividend, pruning_score, emission and bonds, and
     /// returns the emissions for uids/hotkeys in a given `netuid`.
     ///
     /// # Args:
@@ -344,37 +344,35 @@ impl<T: Config> Pallet<T> {
     ///
     ///  * 'debug' ( bool ):
     ///     - Print debugging outputs.
-    
+
     pub fn get_active_status(netuid: u16) -> (Vec<bool>, Vec<bool>, Vec<u64>) {
         // Get current block.
         let current_block: u64 = Self::get_current_block_as_u64();
         log::trace!("current_block: {:?}", current_block);
-    
+
         // Get activity cutoff.
         let activity_cutoff: u64 = Self::get_activity_cutoff(netuid) as u64;
         log::trace!("activity_cutoff: {:?}", activity_cutoff);
-    
+
         // Last update vector.
         let last_update: Vec<u64> = Self::get_last_update(netuid);
         log::trace!("Last update: {:?}", &last_update);
-    
+
         // Inactive mask.
         let inactive: Vec<bool> = last_update
             .iter()
             .map(|updated| updated.saturating_add(activity_cutoff) < current_block)
             .collect();
         log::trace!("Inactive: {:?}", inactive.clone());
-    
+
         // Logical negation of inactive.
         let active: Vec<bool> = inactive.iter().map(|&b| !b).collect();
         log::trace!("Active: {:?}", active.clone());
-    
+
         (inactive, active, last_update)
     }
-    
 
     pub fn get_stake(netuid: u16) -> Vec<I32F32> {
-
         let n: u16 = Self::get_subnetwork_n(netuid);
         log::trace!("Number of Neurons in Network: {:?}", n);
 
@@ -400,7 +398,6 @@ impl<T: Config> Pallet<T> {
         return stake;
     }
 
-
     fn get_validator_permits(netuid: u16) -> (Vec<bool>, Vec<bool>, Vec<bool>) {
         let stake = Self::get_stake(netuid);
         let validator_permits: Vec<bool> = Self::get_validator_permit(netuid);
@@ -424,14 +421,13 @@ impl<T: Config> Pallet<T> {
     /// * 'netuid': ( u16 ):
     #[allow(clippy::indexing_slicing)]
     pub fn subtensor_active_stake(netuid: u16, exclude_uid: Option<u16>) -> Vec<I32F32> {
-
         // Calculate inactive and active statuses.
         let (inactive, _, _) = Self::get_active_status(netuid);
-    
+
         // Retrieve stakes for the given network.
         let stake = Self::get_stake(netuid);
         let mut active_stake: Vec<I32F32> = stake.clone();
-        
+
         // remove exclude_uid if provided
         if let Some(uid) = exclude_uid {
             if (uid as usize) < active_stake.len() {
@@ -439,40 +435,37 @@ impl<T: Config> Pallet<T> {
             }
         }
         // Determine the validator_forbids to use.
-        let (_,validator_forbids,_) = Self::get_validator_permits(netuid);
-    
+        let (_, validator_forbids, _) = Self::get_validator_permits(netuid);
+
         // Remove inactive stake.
         inplace_mask_vector(&inactive, &mut active_stake);
-    
+
         // Remove non-validator stake.
         inplace_mask_vector(&validator_forbids, &mut active_stake);
-    
+
         // Normalize active stake.
         inplace_normalize(&mut active_stake);
         log::trace!("Active Stake:\n{:?}\n", &active_stake);
         active_stake
     }
 
-
-
     fn get_pre_clip_sparse_weights(netuid: u16) -> Vec<Vec<(u16, I32F32)>> {
         // Determine the validator_forbids to use.
-        let (_,validator_forbids,_) = Self::get_validator_permits(netuid);
+        let (_, validator_forbids, _) = Self::get_validator_permits(netuid);
 
-    
         // Determine the last_update to use.
         let (_, _, last_update) = Self::get_active_status(netuid);
-    
+
         let block_at_registration: Vec<u64> = Self::get_block_at_registration(netuid);
         // Access network weights row unnormalized.
         let mut weights: Vec<Vec<(u16, I32F32)>> = Self::get_weights_sparse(netuid);
-    
+
         // Mask weights that are not from permitted validators.
         weights = mask_rows_sparse(&validator_forbids, &weights);
-    
+
         // Remove self-weight by masking diagonal.
         weights = mask_diag_sparse(&weights);
-    
+
         // Remove weights referring to deregistered neurons.
         weights = vec_mask_sparse_matrix(
             &weights,
@@ -480,16 +473,17 @@ impl<T: Config> Pallet<T> {
             &block_at_registration,
             &|updated, registered| updated <= registered,
         );
-    
+
         // Normalize remaining weights.
         inplace_row_normalize_sparse(&mut weights);
-    
+
         weights
     }
-    
-    
-    
-    pub fn get_normalized_weights(netuid: u16, exclude_uid: Option<u16>) ->(Vec<Vec<(u16, I32F32)>>,  Vec<Vec<(u16, I32F32)>>){
+
+    pub fn get_normalized_weights(
+        netuid: u16,
+        exclude_uid: Option<u16>,
+    ) -> (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>) {
         let weights = Self::get_pre_clip_sparse_weights(netuid);
         let n: u16 = Self::get_subnetwork_n(netuid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
@@ -506,7 +500,7 @@ impl<T: Config> Pallet<T> {
     /// * 'debug' ( bool ):
     fn subtensor_incentive(netuid: u16, exclude_uid: Option<u16>) -> Vec<I32F32> {
         let n: u16 = Self::get_subnetwork_n(netuid);
-        let (_, weights,  )= Self::get_normalized_weights(netuid, exclude_uid);
+        let (_, weights) = Self::get_normalized_weights(netuid, exclude_uid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
         let mut ranks: Vec<I32F32> = matmul_sparse(&weights, &active_stake, n);
@@ -537,10 +531,17 @@ impl<T: Config> Pallet<T> {
     /// (Sparse version used for production.)
     /// # Args:
     /// * 'netuid': ( u16 ):
-    pub fn subtensor_bond_data(netuid: u16, exclude_uid: Option<u16>) -> (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>) {
-
+    pub fn subtensor_bond_data(
+        netuid: u16,
+        exclude_uid: Option<u16>,
+    ) -> (
+        Vec<Vec<(u16, I32F32)>>,
+        Vec<Vec<(u16, I32F32)>>,
+        Vec<Vec<(u16, I32F32)>>,
+        Vec<Vec<(u16, I32F32)>>,
+    ) {
         let n: u16 = Self::get_subnetwork_n(netuid);
-        let( _, weights )= Self::get_normalized_weights(netuid, exclude_uid);
+        let (_, weights) = Self::get_normalized_weights(netuid, exclude_uid);
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
         let mut bonds: Vec<Vec<(u16, I32F32)>> = Self::get_bonds_sparse(netuid);
@@ -558,13 +559,18 @@ impl<T: Config> Pallet<T> {
         inplace_col_normalize_sparse(&mut bonds, n);
         // Compute bonds delta column normalized.
         let mut bonds_delta: Vec<Vec<(u16, I32F32)>> = row_hadamard_sparse(&weights, &active_stake); // ΔB = W◦S (outdated W masked)
-		let non_normalized_bonds_delta = bonds_delta.clone();
+        let non_normalized_bonds_delta = bonds_delta.clone();
         inplace_col_normalize_sparse(&mut bonds_delta, n); // sum_i b_ij = 1
-		
+
         let consensus = Self::subtensor_consensus(netuid, exclude_uid);
 
         // Compute the Exponential Moving Average (EMA) of bonds.
-        let mut ema_bonds = Self::compute_ema_bonds_sparse(netuid, consensus.clone(), bonds_delta.clone(), bonds.clone());
+        let mut ema_bonds = Self::compute_ema_bonds_sparse(
+            netuid,
+            consensus.clone(),
+            bonds_delta.clone(),
+            bonds.clone(),
+        );
         // Normalize EMA bonds.
         inplace_col_normalize_sparse(&mut ema_bonds, n); // sum_i b_ij = 1
         (bonds, bonds_delta, ema_bonds, non_normalized_bonds_delta)
@@ -576,19 +582,32 @@ impl<T: Config> Pallet<T> {
     /// * 'netuid': ( u16 ):
     pub fn subtensor_dividends(netuid: u16, exclude_uid: Option<u16>) -> Vec<I32F32> {
         let incentive = Self::subtensor_incentive(netuid, exclude_uid);
-        let (_,_, ema_bonds,_) = Self::subtensor_bond_data(netuid, exclude_uid); 
+        let (_, _, ema_bonds, _) = Self::subtensor_bond_data(netuid, exclude_uid);
         let mut dividends: Vec<I32F32> = matmul_transpose_sparse(&ema_bonds, &incentive);
         inplace_normalize(&mut dividends);
         return dividends;
     }
 
-
-    pub fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool, (I32F32, I32F32)) {
+    pub fn subtensor_weight_optimization(
+        netuid: u16,
+        exclude_uid: Option<u16>,
+    ) -> (
+        u16,
+        Vec<u64>,
+        Vec<u64>,
+        Vec<bool>,
+        Vec<I32F32>,
+        Vec<Vec<(u16, I32F32)>>,
+        I32F32,
+        Vec<Vec<(u16, I32F32)>>,
+        bool,
+        (I32F32, I32F32),
+    ) {
         // Get subnetwork size.
         let n: u16 = Self::get_subnetwork_n(netuid);
         // Last update vector.
         let last_update: Vec<u64> = Self::get_last_update(netuid);
-    
+
         // Block at registration vector (block when each neuron was most recently registered).
         let block_at_registration: Vec<u64> = Self::get_block_at_registration(netuid);
         log::trace!("Block at registration: {:?}", &block_at_registration);
@@ -620,7 +639,6 @@ impl<T: Config> Pallet<T> {
         // ==================
         // == Active Stake ==
         // ==================
-        
 
         let active_stake = Self::subtensor_active_stake(netuid, exclude_uid);
 
@@ -634,13 +652,26 @@ impl<T: Config> Pallet<T> {
         let liquid_alpha_on: bool = LiquidAlphaOn::<T>::get(netuid);
         let alpha_values: (I32F32, I32F32) = Self::get_alpha_values_32(netuid);
 
-        (n, last_update, block_at_registration, validator_permits, active_stake, weights, kappa, bonds, liquid_alpha_on, alpha_values)
+        (
+            n,
+            last_update,
+            block_at_registration,
+            validator_permits,
+            active_stake,
+            weights,
+            kappa,
+            bonds,
+            liquid_alpha_on,
+            alpha_values,
+        )
     }
 
-
-
     #[allow(clippy::indexing_slicing)]
-    pub fn subtensor_epoch(netuid: u16, incentive: Option<bool>, exclude_uid: Option<u16>) -> EpochResult<T> {
+    pub fn subtensor_epoch(
+        netuid: u16,
+        incentive: Option<bool>,
+        exclude_uid: Option<u16>,
+    ) -> EpochResult<T> {
         // Get the rao_emission using the getter function
         let rao_emission: u64 = Self::get_emission_value(netuid);
         // If incentive is true, return the incentive storage value as Vec<(T::AccountId, I32F32)>
@@ -653,8 +684,8 @@ impl<T: Config> Pallet<T> {
         // Otherwise, return the emission tuples
         let emission_tuples = Self::epoch(netuid, rao_emission);
         EpochResult::Emissions(emission_tuples)
-    }    
-    
+    }
+
     /// Calculates reward consensus values, then updates rank, trust, consensus, incentive, dividend, pruning_score, emission and bonds, and
     /// returns the emissions for uids/hotkeys in a given `netuid`.
     ///

@@ -488,7 +488,6 @@ impl<T: Config> Pallet<T> {
             Error::<T>::ColdkeyIsInArbitration
         );
 
-
         // --- 2. Ensure that the number of registrations in this block doesn't exceed the allowed limit.
         ensure!(
             Self::get_registrations_this_block(root_netuid)
@@ -577,7 +576,7 @@ impl<T: Config> Pallet<T> {
         RegistrationsThisBlock::<T>::mutate(root_netuid, |val| *val += 1);
 
         // --- 16. Log and announce the successful registration.
-    
+
         Self::deposit_event(Event::NeuronRegistered(root_netuid, subnetwork_uid, hotkey));
 
         // --- 17. Finish and return success.
@@ -1245,7 +1244,6 @@ impl<T: Config> Pallet<T> {
                 v => v,
             }
         });
-
 
         match netuids.last() {
             Some(netuid) => *netuid,

@@ -46,7 +46,6 @@ impl<T: Config> Pallet<T> {
             Error::<T>::ColdkeyIsInArbitration
         );
 
-
         // --- 2. Ensure the passed network is valid.
         ensure!(
             netuid != Self::get_root_netuid(),

@@ -821,7 +821,6 @@ impl<T: Config> Pallet<T> {
         // Initialize the total transferred stake to zero
         let mut total_transferred_stake: u64 = 0u64;
 
-
         // Iterate over each hotkey owned by the old coldkey
         for hotkey in old_owned_hotkeys.iter() {
             // Retrieve and remove the stake associated with the hotkey and old coldkey
@@ -839,7 +838,6 @@ impl<T: Config> Pallet<T> {
                 weight.saturating_accrue(T::DbWeight::get().reads_writes(2, 2));
             }
         }
-
 
         for staking_hotkey in StakingHotkeys::<T>::get(old_coldkey) {
             if Stake::<T>::contains_key(staking_hotkey.clone(), old_coldkey) {
@@ -901,7 +899,6 @@ impl<T: Config> Pallet<T> {
         StakingHotkeys::<T>::remove(old_coldkey);
         StakingHotkeys::<T>::insert(new_coldkey, existing_staking_hotkeys);
         weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
-
     }
 
     /// Swaps the total hotkey-coldkey stakes for the current interval from the old coldkey to the new coldkey.

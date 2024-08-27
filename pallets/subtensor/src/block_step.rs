@@ -6,7 +6,6 @@ use substrate_fixed::types::I110F18;
 use substrate_fixed::types::I64F64;
 use substrate_fixed::types::I96F32;
 impl<T: Config> Pallet<T> {
-
     /// Executes the necessary operations for each block.
     pub fn block_step() -> Result<(), &'static str> {
         let block_number: u64 = Self::get_current_block_as_u64();
@@ -124,10 +123,15 @@ impl<T: Config> Pallet<T> {
     /// * `Option<Vec<(T::AccountId, u64)>>` - A list of (coldkey, amount) pairs, or None if the subnet is not in tempo.
     pub fn simulate_emission_drain(netuid: u16) -> Option<Vec<(T::AccountId, u64)>> {
         // Check if it's epoch time for this subnet
-        if Self::blocks_until_next_epoch(netuid, Self::get_tempo(netuid), Self::get_current_block_as_u64()) == 0 {
+        if Self::blocks_until_next_epoch(
+            netuid,
+            Self::get_tempo(netuid),
+            Self::get_current_block_as_u64(),
+        ) == 0
+        {
             // It's epoch time, so we need to calculate the emission for this subnet
             let rao_emission = Self::get_subnet_emission_value(netuid);
-            
+
             // Check if registration is allowed for this subnet
             if !Self::is_registration_allowed(netuid) {
                 return Some(Vec::new()); // No emission if registration is off
@@ -150,10 +154,15 @@ impl<T: Config> Pallet<T> {
             let emission_tuples = Self::epoch_dense(netuid, actual_emission);
 
             // Convert emission tuples to the format expected by simulate_emission_drain
-            return Some(emission_tuples.into_iter().map(|(hotkey, server_amount, validator_amount)| {
-                let total_amount = server_amount.saturating_add(validator_amount);
-                (Self::get_coldkey_for_hotkey(&hotkey), total_amount)
-            }).collect());
+            return Some(
+                emission_tuples
+                    .into_iter()
+                    .map(|(hotkey, server_amount, validator_amount)| {
+                        let total_amount = server_amount.saturating_add(validator_amount);
+                        (Self::get_coldkey_for_hotkey(&hotkey), total_amount)
+                    })
+                    .collect(),
+            );
         }
 
         let Some(tuples_to_drain) = Self::get_loaded_emission_tuples(netuid) else {
@@ -163,7 +172,6 @@ impl<T: Config> Pallet<T> {
         };
 
         log::info!("simulate_emission_drain: {:?}", tuples_to_drain);
-
 
         // If it's not epoch time, we proceed with the existing logic to drain the loaded emission
 
@@ -182,11 +190,10 @@ impl<T: Config> Pallet<T> {
         Some(result)
     }
 
-    
     /// Simulates the emission drain for all subnets.
     /// This function iterates through all subnets and calculates the emission for each,
     /// returning a vector of tuples containing the subnet ID, coldkey, and emission amount.
-    pub fn simulate_emission_drain_all() -> Option<Vec<(T::AccountId,u16,u64)>> {
+    pub fn simulate_emission_drain_all() -> Option<Vec<(T::AccountId, u16, u64)>> {
         let mut all_emissions = Vec::new();
         for (netuid, _) in <Tempo<T> as IterableStorageMap<u16, u16>>::iter() {
             // Skip the root network
@@ -196,7 +203,7 @@ impl<T: Config> Pallet<T> {
 
             if let Some(subnet_emissions) = Self::simulate_emission_drain(netuid) {
                 for (coldkey, amount) in subnet_emissions {
-                    all_emissions.push((coldkey,netuid, amount));
+                    all_emissions.push((coldkey, netuid, amount));
                 }
             }
         }

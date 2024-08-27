@@ -87,7 +87,6 @@ pub mod pallet {
 
             T::Aura::change_authorities(new_authorities.clone());
 
-
             // Return a successful DispatchResultWithPostInfo
             Ok(())
         }
@@ -668,7 +667,6 @@ pub mod pallet {
 
             T::Subtensor::set_network_immunity_period(immunity_period);
 
-
             Ok(())
         }
 
@@ -706,7 +704,6 @@ pub mod pallet {
         pub fn sudo_set_subnet_limit(origin: OriginFor<T>, max_subnets: u16) -> DispatchResult {
             ensure_root(origin)?;
             T::Subtensor::set_subnet_limit(max_subnets);
-
 
             Ok(())
         }

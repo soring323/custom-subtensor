@@ -83,7 +83,6 @@ pub fn migrate_fix_total_coldkey_stake<T: Config>() -> Weight {
         return Weight::zero();
     }
 
-
     // Run the migration
     weight = weight.saturating_add(do_migrate_fix_total_coldkey_stake::<T>());
 

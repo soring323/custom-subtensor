@@ -1,9 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
-use alloc::vec::Vec;
 use alloc::string::String;
-use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams, SubtensorWeightData};
-
+use alloc::vec::Vec;
+use pallet_subtensor::{
+    SerializableEpochResult, SubtensorBondData, SubtensorWeightData, WeightOptimizationParams,
+};
 
 // Here we declare the runtime API. It is implemented it the `impl` block in
 // src/neuron_info.rs, src/subnet_info.rs, and src/delegate_info.rs

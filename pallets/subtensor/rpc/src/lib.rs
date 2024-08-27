@@ -9,18 +9,18 @@ use sp_blockchain::HeaderBackend;
 use sp_runtime::traits::Block as BlockT;
 use std::sync::Arc;
 
+use pallet_subtensor::{
+    SerializableEpochResult, SubtensorBondData, SubtensorWeightData, WeightOptimizationParams,
+};
 use sp_api::ProvideRuntimeApi;
-use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams, SubtensorWeightData};
-
 
 pub use subtensor_custom_rpc_runtime_api::{
     DelegateInfoRuntimeApi, NeuronInfoRuntimeApi, SubnetInfoRuntimeApi,
-    SubnetRegistrationRuntimeApi,
-    SubtensorCustomApi,
+    SubnetRegistrationRuntimeApi, SubtensorCustomApi,
 };
 
+use sp_io::offchain;
 use sp_runtime::offchain::storage::StorageValueRef;
-use sp_io::offchain; 
 #[rpc(client, server)]
 pub trait SubtensorCustomApi<BlockHash> {
     #[method(name = "delegateInfo_getDelegates")]
@@ -57,38 +57,80 @@ pub trait SubtensorCustomApi<BlockHash> {
     #[method(name = "subnetInfo_getLockCost")]
     fn get_network_lock_cost(&self, at: Option<BlockHash>) -> RpcResult<u64>;
 
-     //Add the new method here
+    //Add the new method here
     #[method(name = "subtensor_epoch")]
-    fn subtensor_epoch(&self, netuid: u16, incentive: Option<bool>, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<SerializableEpochResult>;
+    fn subtensor_epoch(
+        &self,
+        netuid: u16,
+        incentive: Option<bool>,
+        exclude_uid: Option<u16>,
+        at: Option<BlockHash>,
+    ) -> RpcResult<SerializableEpochResult>;
 
     #[method(name = "subtensor_active_stake")]
-    fn subtensor_active_stake(&self,netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<String>>; 
+    fn subtensor_active_stake(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Vec<String>>;
 
     #[method(name = "subtensor_consensus")]
-    fn subtensor_consensus(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<String>>; 
+    fn subtensor_consensus(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Vec<String>>;
 
     #[method(name = "subtensor_bond_data")]
-    fn subtensor_bond_data(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<SubtensorBondData>;
+    fn subtensor_bond_data(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<BlockHash>,
+    ) -> RpcResult<SubtensorBondData>;
 
     #[method(name = "subtensor_weights")]
-    fn subtensor_weights(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<SubtensorWeightData>;
+    fn subtensor_weights(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<BlockHash>,
+    ) -> RpcResult<SubtensorWeightData>;
 
     #[method(name = "subtensor_dividends")]
-    fn subtensor_dividends(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<Vec<String>>;
+    fn subtensor_dividends(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Vec<String>>;
 
     #[method(name = "subtensor_weight_optimization")]
-    fn subtensor_weight_optimization(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<BlockHash>) -> RpcResult<WeightOptimizationParams>;
+    fn subtensor_weight_optimization(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<BlockHash>,
+    ) -> RpcResult<WeightOptimizationParams>;
 
     #[method(name = "subtensor_simulate_emission_drain")]
-    fn subtensor_simulate_emission_drain(&self, netuid: u16, at: Option<BlockHash>) -> RpcResult<Vec<(String, u64)>>;
+    fn subtensor_simulate_emission_drain(
+        &self,
+        netuid: u16,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Vec<(String, u64)>>;
 
     #[method(name = "subtensor_simulate_emission_drain_all")]
-    fn subtensor_simulate_emission_drain_all(&self, at: Option<BlockHash>) -> RpcResult<Vec<(String,u16,u64)>>;
+    fn subtensor_simulate_emission_drain_all(
+        &self,
+        at: Option<BlockHash>,
+    ) -> RpcResult<Vec<(String, u16, u64)>>;
 
     // #[method(name = "subtensor_emission_values")]
     // fn subtensor_emission_values(&self, at: Option<BlockHash>) -> RpcResult<Vec<(String, u64)>>;
 }
-
 
 #[rpc(client, server)]
 pub trait SubtensorOffchainCustomApi<BlockHash> {
@@ -142,7 +184,7 @@ where
     C::Api: NeuronInfoRuntimeApi<Block>,
     C::Api: SubnetInfoRuntimeApi<Block>,
     C::Api: SubnetRegistrationRuntimeApi<Block>,
-    C::Api: SubtensorCustomApi<Block>
+    C::Api: SubtensorCustomApi<Block>,
 {
     fn get_delegates(&self, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<u8>> {
         let api = self.client.runtime_api();
@@ -278,81 +320,130 @@ where
     ) -> RpcResult<SerializableEpochResult> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api
-            .subtensor_epoch(at,netuid, incentive, exclude_uid)
+        api.subtensor_epoch(at, netuid, incentive, exclude_uid)
             .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet epoch values: {:?}", e)).into()})
+                Error::RuntimeError(format!("Unable to get subnet epoch values: {:?}", e)).into()
+            })
     }
 
-    fn subtensor_active_stake(&self,netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<String>> {
+    fn subtensor_active_stake(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<Vec<String>> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api
-            .subtensor_active_stake(at,netuid, exclude_uid)
+        api.subtensor_active_stake(at, netuid, exclude_uid)
             .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet active stake values: {:?}", e)).into()})
+                Error::RuntimeError(format!("Unable to get subnet active stake values: {:?}", e))
+                    .into()
+            })
     }
 
-    fn subtensor_consensus(&self,netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<String>> {
+    fn subtensor_consensus(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<Vec<String>> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api
-            .subtensor_consensus(at,netuid, exclude_uid)
+        api.subtensor_consensus(at, netuid, exclude_uid)
             .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet consensus values: {:?}", e)).into()})
+                Error::RuntimeError(format!("Unable to get subnet consensus values: {:?}", e))
+                    .into()
+            })
     }
 
-    fn subtensor_bond_data(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<SubtensorBondData> {
-
+    fn subtensor_bond_data(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<SubtensorBondData> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api
-            .subtensor_bond_data(at,netuid, exclude_uid)
+        api.subtensor_bond_data(at, netuid, exclude_uid)
             .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet bond data: {:?}", e)).into()})
+                Error::RuntimeError(format!("Unable to get subnet bond data: {:?}", e)).into()
+            })
     }
 
-    fn subtensor_weights(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<SubtensorWeightData> {
+    fn subtensor_weights(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<SubtensorWeightData> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api
-            .subtensor_weights(at,netuid, exclude_uid)
-            .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet bond data: {:?}", e)).into()})
+        api.subtensor_weights(at, netuid, exclude_uid).map_err(|e| {
+            Error::RuntimeError(format!("Unable to get subnet bond data: {:?}", e)).into()
+        })
     }
 
-    fn subtensor_dividends(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<String>> {
+    fn subtensor_dividends(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<Vec<String>> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api
-            .subtensor_dividends(at,netuid, exclude_uid)
+        api.subtensor_dividends(at, netuid, exclude_uid)
             .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet dividends: {:?}", e)).into()})
+                Error::RuntimeError(format!("Unable to get subnet dividends: {:?}", e)).into()
+            })
     }
 
-    fn subtensor_weight_optimization(&self, netuid: u16, exclude_uid: Option<u16>, at: Option<<Block as BlockT>::Hash>) -> RpcResult<WeightOptimizationParams> {
+    fn subtensor_weight_optimization(
+        &self,
+        netuid: u16,
+        exclude_uid: Option<u16>,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<WeightOptimizationParams> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api.subtensor_weight_optimization(at,netuid, exclude_uid)
+        api.subtensor_weight_optimization(at, netuid, exclude_uid)
             .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet weight optimization params: {:?}", e)).into()})
+                Error::RuntimeError(format!(
+                    "Unable to get subnet weight optimization params: {:?}",
+                    e
+                ))
+                .into()
+            })
     }
 
-    fn subtensor_simulate_emission_drain(&self, netuid: u16, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<(String, u64)>> {
+    fn subtensor_simulate_emission_drain(
+        &self,
+        netuid: u16,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<Vec<(String, u64)>> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api.subtensor_simulate_emission_drain(at,netuid)
+        api.subtensor_simulate_emission_drain(at, netuid)
             .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet simulate emission drain: {:?}", e)).into()})
+                Error::RuntimeError(format!(
+                    "Unable to get subnet simulate emission drain: {:?}",
+                    e
+                ))
+                .into()
+            })
     }
 
-    fn subtensor_simulate_emission_drain_all(&self, at: Option<<Block as BlockT>::Hash>) -> RpcResult<Vec<(String,u16,u64)>> {
+    fn subtensor_simulate_emission_drain_all(
+        &self,
+        at: Option<<Block as BlockT>::Hash>,
+    ) -> RpcResult<Vec<(String, u16, u64)>> {
         let api = self.client.runtime_api();
         let at = at.unwrap_or_else(|| self.client.info().best_hash);
-        api.subtensor_simulate_emission_drain_all(at)
-            .map_err(|e| {
-            Error::RuntimeError(format!("Unable to get subnet simulate emission drain all: {:?}", e)).into()})
+        api.subtensor_simulate_emission_drain_all(at).map_err(|e| {
+            Error::RuntimeError(format!(
+                "Unable to get subnet simulate emission drain all: {:?}",
+                e
+            ))
+            .into()
+        })
     }
 }
-
-

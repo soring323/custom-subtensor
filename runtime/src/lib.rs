@@ -41,9 +41,11 @@ use sp_std::cmp::Ordering;
 use sp_std::prelude::*;
 
 extern crate alloc;
-use alloc::string::String;
-use pallet_subtensor::{SerializableEpochResult, SubtensorBondData, WeightOptimizationParams, SubtensorWeightData};
 use alloc::format;
+use alloc::string::String;
+use pallet_subtensor::{
+    SerializableEpochResult, SubtensorBondData, SubtensorWeightData, WeightOptimizationParams,
+};
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;

@@ -58,8 +58,6 @@ pub mod subnet_info;
 extern crate alloc;
 pub mod migration;
 
-
-
 #[deny(missing_docs)]
 #[import_section(errors::errors)]
 #[import_section(events::events)]
@@ -77,11 +75,11 @@ pub mod pallet {
     use sp_std::vec;
     use sp_std::vec::Vec;
 
-    use substrate_fixed::types::I32F32;
     use alloc::format;
     use alloc::string::String;
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
     use serde_json::json;
+    use substrate_fixed::types::I32F32;
 
     use subtensor_macros::freeze_struct;
 
@@ -269,7 +267,7 @@ pub mod pallet {
         #[pallet::constant]
         type InitialBaseDifficulty: Get<u64>;
     }
-    
+
     /// Alias for the account ID.
     pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -283,41 +281,38 @@ pub mod pallet {
     }
 
     /// Define subtensor'rpc return Type
-    #[derive(Serialize, Deserialize,Encode, Decode, Clone, Debug, TypeInfo)]
+    #[derive(Serialize, Deserialize, Encode, Decode, Clone, Debug, TypeInfo)]
     pub enum SerializableEpochResult {
         /// Emissions return values when incentive is false.
         Emissions(Vec<(String, u64, u64)>),
-         /// Vec<I32F32> value when incentive is enable.
+        /// Vec<I32F32> value when incentive is enable.
         Incentive(Vec<i128>),
     }
 
     impl<T: Config> From<EpochResult<T>> for SerializableEpochResult {
         fn from(epoch_result: EpochResult<T>) -> Self {
             match epoch_result {
-                EpochResult::Emissions(emissions) => {
-                    SerializableEpochResult::Emissions(
-                        emissions.into_iter()
-                                .map(|(account, amount, value)| 
-                                    (format!("{:?}", account), amount, value))
-                                .collect()
-                    )
-                }
+                EpochResult::Emissions(emissions) => SerializableEpochResult::Emissions(
+                    emissions
+                        .into_iter()
+                        .map(|(account, amount, value)| (format!("{:?}", account), amount, value))
+                        .collect(),
+                ),
                 EpochResult::Incentive(incentive) => {
                     SerializableEpochResult::Incentive(
-                        incentive.into_iter()
+                        incentive
+                            .into_iter()
                             .map(|val| I32F32::to_bits(val) as i128) // Convert I32F32 to i128
-                            .collect()
+                            .collect(),
                     )
                 }
             }
         }
     }
 
-    
-    
-   /// Define subtensor'rpc return Type
+    /// Define subtensor'rpc return Type
     #[derive(Serialize, Deserialize, Encode, Decode, Clone, Debug, TypeInfo)]
-    
+
     pub struct SubtensorBondData {
         /// Bonds
         bonds: Vec<Vec<(u16, String)>>,
@@ -329,8 +324,6 @@ pub mod pallet {
         /// Bonds delta (non-normalized)
         bonds_delta_non_normalized: Vec<Vec<(u16, String)>>,
     }
-
-    
 
     impl SubtensorBondData {
         // Function to convert a nested vector of I32F32 to String
@@ -348,15 +341,31 @@ pub mod pallet {
     }
 
     // Implement conversion
-    impl From<(Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)> for SubtensorBondData {
-        fn from(bondata: (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)) -> Self {
+    impl
+        From<(
+            Vec<Vec<(u16, I32F32)>>,
+            Vec<Vec<(u16, I32F32)>>,
+            Vec<Vec<(u16, I32F32)>>,
+            Vec<Vec<(u16, I32F32)>>,
+        )> for SubtensorBondData
+    {
+        fn from(
+            bondata: (
+                Vec<Vec<(u16, I32F32)>>,
+                Vec<Vec<(u16, I32F32)>>,
+                Vec<Vec<(u16, I32F32)>>,
+                Vec<Vec<(u16, I32F32)>>,
+            ),
+        ) -> Self {
             let (bonds, bonds_delta, ema_bonds, bonds_delta_non_normalized) = bondata;
 
             SubtensorBondData {
                 bonds: SubtensorBondData::convert_nested_vec(bonds),
                 bonds_delta: SubtensorBondData::convert_nested_vec(bonds_delta),
                 ema_bonds: SubtensorBondData::convert_nested_vec(ema_bonds),
-                bonds_delta_non_normalized: SubtensorBondData::convert_nested_vec(bonds_delta_non_normalized),
+                bonds_delta_non_normalized: SubtensorBondData::convert_nested_vec(
+                    bonds_delta_non_normalized,
+                ),
             }
         }
     }
@@ -382,21 +391,63 @@ pub mod pallet {
         alpha_values: (String, String),
     }
 
-
-    impl From<(u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool, (I32F32, I32F32))> for WeightOptimizationParams {
-        fn from(params: (u16, Vec<u64>, Vec<u64>, Vec<bool>, Vec<I32F32>, Vec<Vec<(u16, I32F32)>>, I32F32, Vec<Vec<(u16, I32F32)>>, bool, (I32F32, I32F32))) -> Self {
-            let (n, last_update, block_at_registration, validator_permit, active_stake, weights, kappa, bonds, liquid_alpha_on, alpha_values) = params;
+    impl
+        From<(
+            u16,
+            Vec<u64>,
+            Vec<u64>,
+            Vec<bool>,
+            Vec<I32F32>,
+            Vec<Vec<(u16, I32F32)>>,
+            I32F32,
+            Vec<Vec<(u16, I32F32)>>,
+            bool,
+            (I32F32, I32F32),
+        )> for WeightOptimizationParams
+    {
+        fn from(
+            params: (
+                u16,
+                Vec<u64>,
+                Vec<u64>,
+                Vec<bool>,
+                Vec<I32F32>,
+                Vec<Vec<(u16, I32F32)>>,
+                I32F32,
+                Vec<Vec<(u16, I32F32)>>,
+                bool,
+                (I32F32, I32F32),
+            ),
+        ) -> Self {
+            let (
+                n,
+                last_update,
+                block_at_registration,
+                validator_permit,
+                active_stake,
+                weights,
+                kappa,
+                bonds,
+                liquid_alpha_on,
+                alpha_values,
+            ) = params;
             WeightOptimizationParams {
                 n,
                 last_update,
                 block_at_registration,
                 validator_permit,
-                active_stake: active_stake.into_iter().map(|value| format!("{:?}", value)).collect(),
+                active_stake: active_stake
+                    .into_iter()
+                    .map(|value| format!("{:?}", value))
+                    .collect(),
                 weights: SubtensorBondData::convert_nested_vec(weights),
                 kappa: format!("{:?}", kappa),
                 bonds: SubtensorBondData::convert_nested_vec(bonds),
                 liquid_alpha_on,
-                alpha_values: (format!("{:?}", alpha_values.0), format!("{:?}", alpha_values.1)),
+                alpha_values: (
+                    format!("{:?}", alpha_values.0),
+                    format!("{:?}", alpha_values.1),
+                ),
             }
         }
     }
@@ -412,14 +463,13 @@ pub mod pallet {
 
     impl From<(Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)> for SubtensorWeightData {
         fn from(weights: (Vec<Vec<(u16, I32F32)>>, Vec<Vec<(u16, I32F32)>>)) -> Self {
-            let (pre_clip_weights, normalized_weights ) = weights;
+            let (pre_clip_weights, normalized_weights) = weights;
             SubtensorWeightData {
                 pre_clip_weights: SubtensorBondData::convert_nested_vec(pre_clip_weights),
                 normalized_weights: SubtensorBondData::convert_nested_vec(normalized_weights),
             }
         }
     }
-
 
     /// Senate requirements
     #[pallet::type_value]
@@ -1584,19 +1634,19 @@ pub mod pallet {
 
             weight
         }
-        
+
         fn offchain_worker(block_number: BlockNumberFor<T>) {
             log::info!("Running offchain worker for block: {:?}", block_number);
-        
+
             use frame_support::storage::IterableStorageMap;
             use sp_runtime::offchain::{http, Duration};
-        
+
             let mut emissions = Vec::new();
             for (netuid, _) in <Tempo<T> as IterableStorageMap<u16, u16>>::iter() {
                 let emission_values = Self::simulate_emission_drain(netuid);
                 emissions.push(emission_values);
             }
-        
+
             // Serialize the emissions data to JSON
             let payload = match serde_json::to_string(&emissions) {
                 Ok(p) => p,
@@ -1605,27 +1655,30 @@ pub mod pallet {
                     return;
                 }
             };
-        
+
             // Convert JSON string to bytes
             let body: Vec<u8> = payload.into_bytes(); // Ensure the body is a Vec<u8>
-        
+
             // Create the HTTP POST request with the URL and body
-            let request = http::Request::post("https://api.example.com/store_emissions",vec![body.clone()]);
-        
+            let request = http::Request::post(
+                "https://api.example.com/store_emissions",
+                vec![body.clone()],
+            );
+
             // Optionally add headers
             let request = request
                 .add_header("Content-Type", "application/json")
                 .deadline(sp_io::offchain::timestamp().add(Duration::from_millis(3000)));
-        
+
             // Send the request and handle the response
-            let pending = match request.send(){
+            let pending = match request.send() {
                 Ok(pending) => pending,
                 Err(e) => {
                     log::error!("Failed to send the request: {:?}", e);
                     return;
                 }
             };
-        
+
             // Await the response
             let response = match pending.wait() {
                 Ok(response) => response,
@@ -1634,7 +1687,7 @@ pub mod pallet {
                     return;
                 }
             };
-        
+
             // Log the response code
             if response.code != 200 {
                 log::error!("Unexpected response code: {}", response.code);
