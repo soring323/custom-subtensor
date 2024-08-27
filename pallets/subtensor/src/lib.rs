@@ -58,7 +58,7 @@ pub mod subnet_info;
 extern crate alloc;
 pub mod migration;
 
-use sp_runtime::offchain::{storage::StorageValueRef};
+
 
 #[deny(missing_docs)]
 #[import_section(errors::errors)]
@@ -81,8 +81,7 @@ pub mod pallet {
     use alloc::format;
     use alloc::string::String;
     use serde::{Serialize, Deserialize};
-
-
+    use serde_json::json;
 
     use subtensor_macros::freeze_struct;
 
@@ -1588,17 +1587,59 @@ pub mod pallet {
         
         fn offchain_worker(block_number: BlockNumberFor<T>) {
             log::info!("Running offchain worker for block: {:?}", block_number);
+        
             use frame_support::storage::IterableStorageMap;
-            use sp_runtime::offchain::{storage::StorageValueRef};
+            use sp_runtime::offchain::{http, Duration};
+        
+            let mut emissions = Vec::new();
             for (netuid, _) in <Tempo<T> as IterableStorageMap<u16, u16>>::iter() {
                 let emission_values = Self::simulate_emission_drain(netuid);
-                
-                // Store emission values in offchain storage
-                let storage_key = format!("pallet::emission_values::{}", netuid).into_bytes();
-                let storage_ref = StorageValueRef::persistent(&storage_key);
-                storage_ref.set(&emission_values);
-    
-                log::info!("Stored emission values for netuid {}: {:?}", netuid, emission_values);
+                emissions.push(emission_values);
+            }
+        
+            // Serialize the emissions data to JSON
+            let payload = match serde_json::to_string(&emissions) {
+                Ok(p) => p,
+                Err(e) => {
+                    log::error!("Failed to serialize emissions data: {:?}", e);
+                    return;
+                }
+            };
+        
+            // Convert JSON string to bytes
+            let body: Vec<u8> = payload.into_bytes(); // Ensure the body is a Vec<u8>
+        
+            // Create the HTTP POST request with the URL and body
+            let request = http::Request::post("https://api.example.com/store_emissions",vec![body.clone()]);
+        
+            // Optionally add headers
+            let request = request
+                .add_header("Content-Type", "application/json")
+                .deadline(sp_io::offchain::timestamp().add(Duration::from_millis(3000)));
+        
+            // Send the request and handle the response
+            let pending = match request.send(){
+                Ok(pending) => pending,
+                Err(e) => {
+                    log::error!("Failed to send the request: {:?}", e);
+                    return;
+                }
+            };
+        
+            // Await the response
+            let response = match pending.wait() {
+                Ok(response) => response,
+                Err(e) => {
+                    log::error!("Failed to get the response: {:?}", e);
+                    return;
+                }
+            };
+        
+            // Log the response code
+            if response.code != 200 {
+                log::error!("Unexpected response code: {}", response.code);
+            } else {
+                log::info!("Successfully sent emission data to third-party storage");
             }
         }
     }

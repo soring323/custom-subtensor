@@ -5,8 +5,6 @@ use sp_runtime::Saturating;
 use substrate_fixed::types::I110F18;
 use substrate_fixed::types::I64F64;
 use substrate_fixed::types::I96F32;
-use alloc::format;
-
 impl<T: Config> Pallet<T> {
 
     /// Executes the necessary operations for each block.
@@ -125,7 +123,6 @@ impl<T: Config> Pallet<T> {
     ///
     /// * `Option<Vec<(T::AccountId, u64)>>` - A list of (coldkey, amount) pairs, or None if the subnet is not in tempo.
     pub fn simulate_emission_drain(netuid: u16) -> Option<Vec<(T::AccountId, u64)>> {
-        log::info!("check epoch time: {:?}", Self::blocks_until_next_epoch(netuid, Self::get_tempo(netuid), Self::get_current_block_as_u64()));
         // Check if it's epoch time for this subnet
         if Self::blocks_until_next_epoch(netuid, Self::get_tempo(netuid), Self::get_current_block_as_u64()) == 0 {
             // It's epoch time, so we need to calculate the emission for this subnet
@@ -185,13 +182,6 @@ impl<T: Config> Pallet<T> {
         Some(result)
     }
 
-
-    pub fn fetch_emission_values(netuid: u16) -> Option<Vec<(T::AccountId, u64)>> {
-        let storage_key = format!("pallet::emission_values::{}", netuid).into_bytes();
-        let storage_ref = StorageValueRef::persistent(&storage_key);
-        //let data = storage_ref.get::<Vec<(T::AccountId, u64)>>().ok().flatten()
-        storage_ref.get::<Vec<(T::AccountId, u64)>>().ok().flatten()
-    }
     
     /// Simulates the emission drain for all subnets.
     /// This function iterates through all subnets and calculates the emission for each,

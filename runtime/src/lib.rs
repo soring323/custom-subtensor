@@ -1744,16 +1744,6 @@ impl_runtime_apis! {
                 .collect()
         }
 
-        fn subtensor_epoch_emission_values(netuid: u16) -> Vec<(String, u64)> {
-            let result = SubtensorModule::fetch_emission_values(netuid);
-            let result = result.unwrap_or_default();
-            result.into_iter()
-                .map(|(hotkey, emission)| {
-                    (format!("{:?}", hotkey), emission)
-                })
-                .collect()
-        }
-
     }
 }
 

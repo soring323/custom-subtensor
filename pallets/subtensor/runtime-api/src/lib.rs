@@ -46,6 +46,5 @@ sp_api::decl_runtime_apis! {
         fn subtensor_weight_optimization(netuid: u16, exclude_uid: Option<u16>) -> WeightOptimizationParams;
         fn subtensor_simulate_emission_drain(netuid: u16) -> Vec<(String, u64)>;
         fn subtensor_simulate_emission_drain_all() -> Vec<(String,u16,u64)>;
-        fn subtensor_epoch_emission_values(netuid: u16) -> Vec<(String,u64)>;
     }
 }

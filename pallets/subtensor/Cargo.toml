@@ -26,8 +26,9 @@ scale-info = { workspace = true, features = ["derive"] }
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
-sp-io = { workspace = true }
+sp-io = { workspace = true}
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 serde-tuple-vec-map = { workspace = true }
 serde_bytes = { workspace = true, features = ["alloc"] }
 serde_with = { workspace = true, features = ["macros"] }

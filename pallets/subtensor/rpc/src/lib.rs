@@ -19,6 +19,8 @@ pub use subtensor_custom_rpc_runtime_api::{
     SubtensorCustomApi,
 };
 
+use sp_runtime::offchain::storage::StorageValueRef;
+use sp_io::offchain; 
 #[rpc(client, server)]
 pub trait SubtensorCustomApi<BlockHash> {
     #[method(name = "delegateInfo_getDelegates")]
@@ -82,6 +84,16 @@ pub trait SubtensorCustomApi<BlockHash> {
 
     #[method(name = "subtensor_simulate_emission_drain_all")]
     fn subtensor_simulate_emission_drain_all(&self, at: Option<BlockHash>) -> RpcResult<Vec<(String,u16,u64)>>;
+
+    // #[method(name = "subtensor_emission_values")]
+    // fn subtensor_emission_values(&self, at: Option<BlockHash>) -> RpcResult<Vec<(String, u64)>>;
+}
+
+
+#[rpc(client, server)]
+pub trait SubtensorOffchainCustomApi<BlockHash> {
+    #[method(name = "subtensor_emission_values")]
+    fn subtensor_emission_values(&self, netuids: Vec<u16>) -> RpcResult<Vec<(String, u64)>>;
 }
 
 pub struct SubtensorCustom<C, P> {
@@ -341,7 +353,6 @@ where
             .map_err(|e| {
             Error::RuntimeError(format!("Unable to get subnet simulate emission drain all: {:?}", e)).into()})
     }
-
-
-  
 }
+
+
